@@ -1,0 +1,548 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AjvValidationPipe > DTO generates JSON schema 1`] = `
+{
+  "properties": {
+    "any": {
+      Symbol(TypeBox.Kind): "Any",
+    },
+    "array": {
+      "items": {
+        "type": "number",
+        Symbol(TypeBox.Kind): "Number",
+      },
+      "type": "array",
+      Symbol(TypeBox.Kind): "Array",
+    },
+    "arrayFrom5": {
+      "items": {
+        "type": "number",
+        Symbol(TypeBox.Kind): "Number",
+      },
+      "minItems": 5,
+      "type": "array",
+      Symbol(TypeBox.Kind): "Array",
+    },
+    "arrayNonEmpty": {
+      "items": {
+        "type": "number",
+        Symbol(TypeBox.Kind): "Number",
+      },
+      "minItems": 1,
+      "type": "array",
+      Symbol(TypeBox.Kind): "Array",
+    },
+    "arrayOf5": {
+      "items": {
+        "type": "number",
+        Symbol(TypeBox.Kind): "Number",
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "type": "array",
+      Symbol(TypeBox.Kind): "Array",
+    },
+    "boolean": {
+      "type": "boolean",
+      Symbol(TypeBox.Kind): "Boolean",
+    },
+    "coerceDate": {
+      "type": "Date",
+      Symbol(TypeBox.Kind): "Date",
+    },
+    "coerceToBool": {
+      "type": "boolean",
+      Symbol(TypeBox.Kind): "Boolean",
+    },
+    "coerceToString": {
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "cuid": {
+      "pattern": "^c[a-z0-9]{24}$",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "cuid2": {
+      "pattern": "^[a-z][a-z0-9]{7,31}$",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "datetime": {
+      "format": "date-time",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "default": {
+      "default": "hello world",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "discriminated": {
+      "anyOf": [
+        {
+          "properties": {
+            "data": {
+              "type": "string",
+              Symbol(TypeBox.Kind): "String",
+            },
+            "status": {
+              "const": "success",
+              "type": "string",
+              Symbol(TypeBox.Kind): "Literal",
+            },
+          },
+          "required": [
+            "status",
+            "data",
+          ],
+          "type": "object",
+          Symbol(TypeBox.Kind): "Object",
+        },
+        {
+          "properties": {
+            "message": {
+              "type": "string",
+              Symbol(TypeBox.Kind): "String",
+            },
+            "status": {
+              "const": "failed",
+              "type": "string",
+              Symbol(TypeBox.Kind): "Literal",
+            },
+          },
+          "required": [
+            "status",
+            "message",
+          ],
+          "type": "object",
+          Symbol(TypeBox.Kind): "Object",
+        },
+      ],
+      Symbol(TypeBox.Kind): "Union",
+    },
+    "email": {
+      "format": "email",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "emoji": {
+      "pattern": "^[\\p{Emoji}]+$",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "endsWith": {
+      "pattern": ".*z$",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "enum": {
+      "anyOf": [
+        {
+          "const": "Salmon",
+          "type": "string",
+          Symbol(TypeBox.Kind): "Literal",
+        },
+        {
+          "const": "Tuna",
+          "type": "string",
+          Symbol(TypeBox.Kind): "Literal",
+        },
+        {
+          "const": "Trout",
+          "type": "string",
+          Symbol(TypeBox.Kind): "Literal",
+        },
+      ],
+      Symbol(TypeBox.Kind): "Union",
+    },
+    "from": {
+      "minimum": -2208988800000,
+      "type": "Date",
+      Symbol(TypeBox.Kind): "Date",
+    },
+    "gt": {
+      "exclusiveMinimum": 5,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "gte": {
+      "minimum": 5,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "includes": {
+      "pattern": ".*hello.*",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "int": {
+      "type": "integer",
+      Symbol(TypeBox.Kind): "Integer",
+    },
+    "intersection": {
+      "allOf": [
+        {
+          "properties": {
+            "name": {
+              "type": "string",
+              Symbol(TypeBox.Kind): "String",
+            },
+          },
+          "required": [
+            "name",
+          ],
+          "type": "object",
+          Symbol(TypeBox.Kind): "Object",
+        },
+        {
+          "properties": {
+            "role": {
+              "type": "string",
+              Symbol(TypeBox.Kind): "String",
+            },
+          },
+          "required": [
+            "role",
+          ],
+          "type": "object",
+          Symbol(TypeBox.Kind): "Object",
+        },
+      ],
+      "type": "object",
+      Symbol(TypeBox.Kind): "Intersect",
+    },
+    "ipv4": {
+      "format": "ipv4",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "ipv6": {
+      "format": "ipv6",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "length": {
+      "maxLength": 5,
+      "minLength": 5,
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "lookup": {
+      "patternProperties": {
+        "^(.*)$": {
+          "type": "boolean",
+          Symbol(TypeBox.Kind): "Boolean",
+        },
+      },
+      "type": "object",
+      Symbol(TypeBox.Kind): "Record",
+    },
+    "lt": {
+      "exclusiveMaximum": 5,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "lte": {
+      "maximum": 5,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "max": {
+      "maxLength": 3,
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "min": {
+      "minLength": 10,
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "multiple": {
+      "default": "test@test.cl",
+      "format": "email",
+      "maxLength": 12,
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "multipleOf": {
+      "multipleOf": 5,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "nan": {
+      "const": NaN,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "negative": {
+      "exclusiveMaximum": 0,
+      "maximum": 0,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "never": {
+      "not": {},
+      Symbol(TypeBox.Kind): "Never",
+    },
+    "nonnegative": {
+      "minimum": 0,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "nonpositive": {
+      "maximum": 0,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "null": {
+      "type": "null",
+      Symbol(TypeBox.Kind): "Null",
+    },
+    "nullable": {
+      "anyOf": [
+        {
+          "type": "boolean",
+          Symbol(TypeBox.Kind): "Boolean",
+        },
+        {
+          "type": "null",
+          Symbol(TypeBox.Kind): "Null",
+        },
+      ],
+      Symbol(TypeBox.Kind): "Union",
+    },
+    "nullish": {
+      "anyOf": [
+        {
+          "type": "boolean",
+          Symbol(TypeBox.Kind): "Boolean",
+        },
+        {
+          "type": "null",
+          Symbol(TypeBox.Kind): "Null",
+        },
+        {
+          "type": "undefined",
+          Symbol(TypeBox.Kind): "Undefined",
+        },
+      ],
+      Symbol(TypeBox.Kind): "Union",
+    },
+    "number": {
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "numberOrBool": {
+      "anyOf": [
+        {
+          "type": "number",
+          Symbol(TypeBox.Kind): "Number",
+        },
+        {
+          "type": "boolean",
+          Symbol(TypeBox.Kind): "Boolean",
+        },
+      ],
+      Symbol(TypeBox.Kind): "Union",
+    },
+    "object": {
+      "properties": {
+        "id": {
+          "exclusiveMinimum": 0,
+          "minimum": 0,
+          "type": "number",
+          Symbol(TypeBox.Kind): "Number",
+        },
+        "name": {
+          "type": "string",
+          Symbol(TypeBox.Kind): "String",
+        },
+      },
+      "required": [
+        "id",
+        "name",
+      ],
+      "type": "object",
+      Symbol(TypeBox.Kind): "Object",
+    },
+    "optional": {
+      "type": "boolean",
+      Symbol(TypeBox.Kind): "Boolean",
+      Symbol(TypeBox.Optional): "Optional",
+    },
+    "positive": {
+      "exclusiveMinimum": 0,
+      "minimum": 0,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Number",
+    },
+    "record": {
+      "patternProperties": {
+        "^(.*)$": {
+          "type": "number",
+          Symbol(TypeBox.Kind): "Number",
+        },
+      },
+      "type": "object",
+      Symbol(TypeBox.Kind): "Record",
+    },
+    "regex": {
+      "pattern": "[a-c]",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "startsWith": {
+      "pattern": "^a.*",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "string": {
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "stringOrNumber": {
+      "anyOf": [
+        {
+          "type": "string",
+          Symbol(TypeBox.Kind): "String",
+        },
+        {
+          "type": "number",
+          Symbol(TypeBox.Kind): "Number",
+        },
+      ],
+      Symbol(TypeBox.Kind): "Union",
+    },
+    "tru": {
+      "const": true,
+      "type": "boolean",
+      Symbol(TypeBox.Kind): "Literal",
+    },
+    "tuna": {
+      "const": "tuna",
+      "type": "string",
+      Symbol(TypeBox.Kind): "Literal",
+    },
+    "tuple": {
+      "additionalItems": false,
+      "items": [
+        {
+          "type": "string",
+          Symbol(TypeBox.Kind): "String",
+        },
+        {
+          "type": "boolean",
+          Symbol(TypeBox.Kind): "Boolean",
+        },
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "type": "array",
+      Symbol(TypeBox.Kind): "Tuple",
+    },
+    "twelve": {
+      "const": 12,
+      "type": "number",
+      Symbol(TypeBox.Kind): "Literal",
+    },
+    "ulid": {
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "undefined": {
+      "type": "undefined",
+      Symbol(TypeBox.Kind): "Undefined",
+    },
+    "unknown": {
+      Symbol(TypeBox.Kind): "Unknown",
+    },
+    "until": {
+      "maximum": 1735689600000,
+      "type": "Date",
+      Symbol(TypeBox.Kind): "Date",
+    },
+    "url": {
+      "format": "uri",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "uuid": {
+      "format": "uuid",
+      "type": "string",
+      Symbol(TypeBox.Kind): "String",
+    },
+    "void": {
+      "type": "void",
+      Symbol(TypeBox.Kind): "Void",
+    },
+  },
+  "required": [
+    "string",
+    "number",
+    "boolean",
+    "undefined",
+    "null",
+    "void",
+    "any",
+    "unknown",
+    "never",
+    "coerceDate",
+    "coerceToString",
+    "coerceToBool",
+    "tuna",
+    "twelve",
+    "tru",
+    "max",
+    "min",
+    "length",
+    "email",
+    "url",
+    "emoji",
+    "uuid",
+    "cuid",
+    "cuid2",
+    "ulid",
+    "regex",
+    "includes",
+    "startsWith",
+    "endsWith",
+    "ipv4",
+    "ipv6",
+    "multiple",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "int",
+    "positive",
+    "nonnegative",
+    "negative",
+    "nonpositive",
+    "multipleOf",
+    "nan",
+    "datetime",
+    "from",
+    "until",
+    "enum",
+    "default",
+    "nullable",
+    "nullish",
+    "object",
+    "array",
+    "arrayNonEmpty",
+    "arrayOf5",
+    "arrayFrom5",
+    "tuple",
+    "stringOrNumber",
+    "numberOrBool",
+    "discriminated",
+    "record",
+    "lookup",
+    "intersection",
+  ],
+  "type": "object",
+  Symbol(TypeBox.Kind): "Object",
+}
+`;
