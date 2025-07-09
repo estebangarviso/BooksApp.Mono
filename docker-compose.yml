@@ -1,0 +1,55 @@
+services:
+  client:
+    build:
+      context: .
+      dockerfile: ./apps/client/Dockerfile
+      args:
+        - ENV=${ENV:-dev}
+    restart: always
+    profiles:
+      - frontend
+    ports:
+      - "8080:${CLIENT_PORT:-8080}"
+    environment:
+      PROXY: "http://server:${SERVER_PORT:-8081}"
+    depends_on:
+      - server
+      - worker-consumer
+    networks:
+      - public
+  server:
+    build:
+      context: .
+      dockerfile: ./apps/server/Dockerfile
+      args:
+        - ENV=${ENV:-dev}
+    restart: always
+    environment:
+      ALLOWED_ORIGINS: "http://web:8080"
+    profiles:
+      - backend
+    ports:
+      - "8080:${SERVER_PORT:-8081}"
+    depends_on:
+      - db
+    networks:
+      - private
+      - public
+  db:
+    image: "postgres:14.18-alpine3.22"
+    restart: always
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_DB: "${POSTGRES_DB:-db_libros_dev}"
+    ports:
+      - "5432:${POSTGRES_PORT:-5432}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - private
+volumes:
+  postgres_data:
+networks:
+  public:
+  private:

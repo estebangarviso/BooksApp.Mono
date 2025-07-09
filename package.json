@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "demo-monorepo-fullstack-event-driven",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:dev": "turbo start:dev",
+    "build:dev": "turbo build:dev",
+    "preview:dev": "turbo preview:dev",
+    "start:prod": "turbo deploy:dev",
+    "build:prod": "turbo build:prod",
+    "preview:prod": "turbo preview:prod",
+    "prepare": "node .husky/install.mjs",
+    "format": "turbo format"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "19.3.0",
+    "@commitlint/config-conventional": "19.2.2",
+    "@commitlint/types": "^19.0.3",
+    "husky": "^9.0.11",
+    "turbo": "^2.0.5",
+    "typescript": "^5.5.2"
+  },
+  "workspaces": [
+    "apps/*",
+    "common/*"
+  ],
+  "packageManager": "pnpm@10.12.4"
+}
