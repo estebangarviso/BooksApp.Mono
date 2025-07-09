@@ -1,6 +1,6 @@
-# Fullstack Application with React and Express.js
+# Fullstack Application with Typescript, React, NestJS and PostgreSQL
 
-This README provides instructions on how to run a fullstack application which uses Turbo and Docker Compose. The application consists of a frontend built with React and a backend built with Express.js. The frontend communicates with the backend using RESTful APIs. The backend uses a Redis cache to store data and a RabbitMQ message broker to queue events and communicate with another application that consumes messages from a queue and publishes them to a Redis PubSub channel.
+This README provides instructions on how to run a fullstack application which uses Turbo and Docker Compose. The application consists of a frontend built with React and a backend built with NestJS, along with a PostgreSQL database. The application is designed to manage a book ledger, allowing users to view, add, edit, and delete books.
 
 ## Tasks Overview
 
