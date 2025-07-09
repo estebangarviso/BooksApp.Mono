@@ -63,7 +63,7 @@ __*Important: Allow docker to create volumes in this directory. For Docker Deskt
     git clone https://github.com/BooksApp.Mono.git .
     ```
 
-2. Start the containers to run local redis and rabbitmq services:
+2. Start the containers to run local postgres service:
 
     ```bash
     docker-compose up -d
