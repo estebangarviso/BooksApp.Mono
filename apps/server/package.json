@@ -1,9 +1,9 @@
 {
 	"$schema": "https://json.schemastore.org/package.json",
 	"version": "0.0.1",
-	"project": "@c2c/libros",
-	"name": "@c2c/libros-server",
-	"title": "(((app-title)))",
+	"project": "@c2c/books",
+	"name": "@c2c/books-server",
+	"title": "Books Server",
 	"description": "(((app-description)))",
 	"scripts": {
 		"start:dev": "env -e dev -m debug --log debug : vite-node --watch src/main.ts",

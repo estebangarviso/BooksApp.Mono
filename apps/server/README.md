@@ -19,10 +19,10 @@
 
 - Replace globally these terms:
 
-    - `(((base-path)))` api base path, i.e. sample (for get /api/sample/v*/*)
-    - `@c2c/libros-backend` app name, i.e. sample-api
-    - `(((app-title)))` app title, i.e. Sample API
-    - `@c2c/libros` project name, i.e. my-project
+    - `` api base path, i.e. sample (for get /api/sample/v*/*)
+    - `@c2c/books-backend` app name, i.e. sample-api
+    - `Books Server` app title, i.e. Sample API
+    - `@c2c/books` project name, i.e. my-project
 
 - Install [NodeJS](https://nodejs.org/es/).
 - Install [PNPM](https://pnpm.io/installation)
@@ -33,7 +33,7 @@
     - Exec `pnpm exec env export -p ".env" -e dev -m build`
     - Exec `docker build --no-cache -f Dockerfile --tag image_name .`
     - Exec `docker run --env-file .env -d -it -p 8080:8080/tcp --name container_name image_name`
-    - Open `http://localhost:8080/api/(((base-path)))` in browser
+    - Open `http://localhost:8080/api/` in browser
 
 ## 📋 **Branches and Environments**
 
