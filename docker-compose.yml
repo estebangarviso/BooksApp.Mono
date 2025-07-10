@@ -25,7 +25,7 @@ services:
         - ENV=${ENV:-dev}
     restart: always
     environment:
-      ALLOWED_ORIGINS: "http://client:8080"
+      ALLOWED_ORIGINS: "http://client:${CLIENT_PORT:-8080}"
     profiles:
       - backend
     ports:
