@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "demo-monorepo-fullstack-event-driven",
+  "name": "booksapp-mono",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
