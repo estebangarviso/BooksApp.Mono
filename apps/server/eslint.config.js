@@ -194,7 +194,6 @@ export default [
 				WARN,
 				{
 					fixStyle: 'inline-type-imports',
-					prefer: 'type-imports',
 				},
 			],
 			'@typescript-eslint/no-empty-interface': [
