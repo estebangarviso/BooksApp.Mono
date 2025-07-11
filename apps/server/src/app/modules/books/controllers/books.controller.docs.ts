@@ -2,6 +2,7 @@ import {
 	ApiBearerAuth,
 	ApiBody,
 	ApiOperation,
+	ApiParam,
 	ApiProduces,
 	ApiQuery,
 	ApiResponse,
@@ -9,9 +10,9 @@ import {
 } from '@nestjs/swagger';
 import { type DecoratorsLookUp } from '#libs/decorators';
 import { HttpStatusCode } from '#libs/http';
-import { CreateBookDto } from '../schemas/create-book.dto.ts';
-import { PaginateBooksDto } from '../schemas/paginate-books.dto.ts';
-import { UpdateBookDto } from '../schemas/update-book.dto.ts';
+import { CreateBookDto } from '../dtos/create-book.dto.ts';
+import { PaginateBooksDto } from '../dtos/paginate-books.dto.ts';
+import { UpdateBookDto } from '../dtos/update-book.dto.ts';
 import { type BooksController } from './books.controller.ts';
 
 export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
@@ -86,6 +87,11 @@ export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
 		update: [
 			ApiOperation({ summary: 'Update a book by ID' }),
 			ApiBody({ schema: UpdateBookDto.refObj }),
+			ApiParam({
+				description: 'ID of the book to update',
+				name: 'id',
+				schema: { type: 'string' },
+			}),
 			ApiResponse({
 				description: 'Book updated successfully',
 				schema: CreateBookDto.refObj,

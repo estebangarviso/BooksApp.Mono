@@ -10,34 +10,36 @@ import {
 	Res,
 	UseGuards,
 } from '@nestjs/common';
-import type { FastifyReply } from 'fastify';
+import { type FastifyReply } from 'fastify';
+import { AuthenticationBasedAccessGuard } from '../../../../libs/guards/abac.guard';
 import { ApplyControllerDocs } from '../../../decorators/docs.decorator';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { type TCreateBookDto } from '../schemas/create-book.dto';
-import { type TPaginateBooksDto } from '../schemas/paginate-books.dto';
-import { type TUpdateBookDto } from '../schemas/update-book.dto';
+import { CreateBookDto } from '../dtos/create-book.dto';
+import { PaginateBooksDto } from '../dtos/paginate-books.dto';
+import { UpdateBookDto } from '../dtos/update-book.dto';
 import { BooksService } from '../services/books.service';
 import { BooksControllerDocs } from './books.controller.docs';
 
 @ApplyControllerDocs(BooksControllerDocs)
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthenticationBasedAccessGuard)
 @Controller('books')
 export class BooksController {
-	constructor(private readonly booksService: BooksService) {}
+	constructor(private readonly _booksService: BooksService) {}
 
 	@Post()
-	create(@Body() createBookDto: TCreateBookDto) {
-		return this.booksService.create(createBookDto);
+	create(@Body() createBookDto: CreateBookDto) {
+		return this._booksService.create(
+			createBookDto as typeof CreateBookDto.schema.static,
+		);
 	}
 
 	@Get()
-	search(@Query() paginateBooksDto: TPaginateBooksDto) {
-		return this.booksService.search(paginateBooksDto);
+	search(@Query() paginateBooksDto: PaginateBooksDto) {
+		return this._booksService.search(paginateBooksDto);
 	}
 
 	@Get('export/csv')
 	exportToCsv(@Res({ passthrough: true }) reply: FastifyReply) {
-		const csvStream = this.booksService.exportToCsv();
+		const csvStream = this._booksService.exportToCsv();
 		const now = new Date().toISOString();
 		void reply.header('Content-Type', 'text/csv');
 		void reply.header(
@@ -51,16 +53,16 @@ export class BooksController {
 
 	@Get(':id')
 	findOne(@Param('id') id: string) {
-		return this.booksService.findOne(id);
+		return this._booksService.findOne(id);
 	}
 
 	@Patch(':id')
-	update(@Param('id') id: string, @Body() updateBookDto: TUpdateBookDto) {
-		return this.booksService.update(id, updateBookDto);
+	update(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
+		return this._booksService.update(id, updateBookDto);
 	}
 
 	@Delete(':id')
 	remove(@Param('id') id: string) {
-		return this.booksService.remove(id);
+		return this._booksService.remove(id);
 	}
 }

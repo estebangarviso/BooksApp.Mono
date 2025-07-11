@@ -1,13 +1,13 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Book } from '#db';
 import { Op } from 'sequelize';
+import { CreateBookDto } from '../dtos/create-book.dto';
+import { PaginateBooksDto } from '../dtos/paginate-books.dto';
+import { UpdateBookDto } from '../dtos/update-book.dto';
 import {
 	BOOKS_REPOSITORY,
 	type IBooksRepository,
 } from '../interfaces/books.repository.interface';
-import { TCreateBookDto } from '../schemas/create-book.dto';
-import { TPaginateBooksDto } from '../schemas/paginate-books.dto';
-import { TUpdateBookDto } from '../schemas/update-book.dto';
 
 @Injectable()
 export class BooksService {
@@ -22,7 +22,7 @@ export class BooksService {
 	 * @param createBookDto - The DTO containing book details.
 	 * @returns The created book instance.
 	 */
-	create(createBookDto: TCreateBookDto) {
+	create(createBookDto: typeof CreateBookDto.schema.static) {
 		// the repository now handles the complex creation logic.
 		return this.booksRepository.create(createBookDto);
 	}
@@ -44,16 +44,16 @@ export class BooksService {
 	/**
 	 * Updates a book by its ID with the provided details.
 	 * The repository's update method needs to be enhanced to handle relations.
-	 * @param id - The ID of the book to update.
+	 * @param bookId - The ID of the book to update.
 	 * @param updateBookDto - The DTO containing the updated book details.
 	 * @returns The updated book instance.
 	 * @throws NotFoundException if the book with the given ID does not exist.
 	 */
-	async update(id: string, updateBookDto: TUpdateBookDto) {
+	async update(bookId: string, updateBookDto: UpdateBookDto) {
 		// TODO: The repository's update method needs to be enhanced to handle relations.
-		const book = await this.booksRepository.update(id, updateBookDto);
+		const book = await this.booksRepository.update(bookId, updateBookDto);
 		if (!book) {
-			throw new NotFoundException(`Book with ID "${id}" not found`);
+			throw new NotFoundException(`Book with ID "${bookId}" not found`);
 		}
 		return book;
 	}
@@ -61,12 +61,12 @@ export class BooksService {
 	/**
 	 * Soft deletes a book by its ID.
 	 * This method marks the book as deleted without removing it from the database.
-	 * @param id - The ID of the book to soft delete.
+	 * @param bookId - The ID of the book to soft delete.
 	 * @returns A promise that resolves when the book is soft deleted.
 	 * @throws NotFoundException if the book with the given ID does not exist.
 	 */
-	remove(id: string) {
-		return this.booksRepository.softDelete(id);
+	remove(bookId: string) {
+		return this.booksRepository.softDelete(bookId);
 	}
 
 	/**
@@ -76,7 +76,7 @@ export class BooksService {
 	 * @returns A promise that resolves to an object containing the count of books and the rows of books.
 	 * @example
 	 * ```typescript
-	 * const result = await booksService.find({
+	 * const result = await booksService.search({
 	 *   includeDeleted: false,
 	 *   limit: 20,
 	 *   page: 1,
@@ -91,7 +91,7 @@ export class BooksService {
 	 * @throws NotFoundException if no books are found.
 	 */
 	async search(
-		options?: TPaginateBooksDto,
+		options?: typeof PaginateBooksDto.schema.static,
 	): Promise<{ count: number; rows: Book[] }> {
 		const {
 			includeDeleted = false,
@@ -134,6 +134,13 @@ export class BooksService {
 		};
 	}
 
+	/**
+	 * Exports books to a CSV format.
+	 * This method generates a CSV stream of books, including their details and relations.
+	 * @param includeDeleted - If true, includes soft-deleted books in the export.
+	 * @returns An async generator that yields CSV rows.
+	 * @throws {NotFoundException} if no books are found to export.
+	 */
 	async *exportToCsv(
 		includeDeleted: boolean = false,
 	): AsyncGenerator<string> {
@@ -199,10 +206,25 @@ export class BooksService {
 	 * Escapes a field for CSV format. If the field contains a comma,
 	 * double-quote, or newline, it will be enclosed in double-quotes.
 	 * Existing double-quotes are escaped by doubling them.
+	 *
+	 * @param field - The field to escape.
+	 * @example
+	 * ```typescript
+	 * const escapedField = this._escapeCsvField('Hello, "World"');
+	 * console.log(escapedField); // Outputs: "Hello, ""World"""
+	 * ```
+	 * @private
+	 * @description This method is used internally to ensure that CSV fields are properly formatted
+	 * to avoid issues with CSV parsers when fields contain special characters.
+	 * It is not intended to be used outside of this service.
+	 * @throws {TypeError} if the field is not a string or cannot be converted to a string.
+	 * @returns {string} The escaped field ready for CSV output.
+	 * @see https://tools.ietf.org/html/rfc4180#section-2 for CSV format specifications.
+	 * @see https://stackoverflow.com/questions/1293147/how-to-escape-double-quotes-in-csv for escaping double quotes in CSV.
 	 */
 	private _escapeCsvField(field: any): string {
 		const str = String(field ?? '');
-		if (/[\n",]/.test(str)) {
+		if (/[\n",]/u.test(str)) {
 			return `"${str.replaceAll('"', '""')}"`;
 		}
 		return str;

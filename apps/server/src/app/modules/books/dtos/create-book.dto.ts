@@ -8,10 +8,12 @@ export class CreateBookDto extends AjvDto({
 		description: 'Author of the book',
 		example: 'F. Scott Fitzgerald',
 	}),
-	availability: Type.Boolean({
-		description: 'Availability of the book',
-		example: true,
-	}),
+	availability: Type.Optional(
+		Type.Boolean({
+			description: 'Availability of the book',
+			example: true,
+		}),
+	),
 	genres: Type.Array(Type.String(), {
 		description: 'Genres of the book',
 		example: ['Fiction', 'Classic'],
@@ -37,8 +39,6 @@ export class CreateBookDto extends AjvDto({
 		example: 'The Great Gatsby',
 	}),
 }) {}
-
-export type TCreateBookDto = typeof CreateBookDto.schema.static;
 
 // register DTO OpenApi schema to Swagger
 CreateBookDto.registerOpenApi();

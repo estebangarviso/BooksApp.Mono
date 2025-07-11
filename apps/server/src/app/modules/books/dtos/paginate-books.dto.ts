@@ -41,7 +41,5 @@ export class PaginateBooksDto extends AjvDto({
 	),
 }) {}
 
-export type TPaginateBooksDto = typeof PaginateBooksDto.schema.static;
-
 // register DTO OpenApi schema to Swagger
 PaginateBooksDto.registerOpenApi();

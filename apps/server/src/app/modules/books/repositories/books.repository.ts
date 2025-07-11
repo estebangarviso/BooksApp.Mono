@@ -3,8 +3,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Author, BaseRepository, Book, Genre, Publisher } from '#db';
 import { CreationAttributes, FindOptions } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
+import { CreateBookDto } from '../dtos/create-book.dto';
 import { IBooksRepository } from '../interfaces/books.repository.interface';
-import { type TCreateBookDto } from '../schemas/create-book.dto';
 
 @Injectable()
 export class BooksRepository
@@ -30,7 +30,7 @@ export class BooksRepository
 	 * @param createBookDto - The DTO containing book details.
 	 * @returns The created book instance with related entities.
 	 */
-	create(createBookDto: TCreateBookDto): Promise<Book> {
+	create(createBookDto: typeof CreateBookDto.schema.static): Promise<Book> {
 		return this.sequelize.transaction(async (t) => {
 			const [author] = await this.authorModel.findOrCreate({
 				transaction: t,
@@ -51,7 +51,7 @@ export class BooksRepository
 				publisherId: publisher.id,
 				title: createBookDto.title,
 			} as CreationAttributes<Book>;
-			const book = await this.bookModel.create(bookAttributes, {
+			const createdBook = await this.bookModel.create(bookAttributes, {
 				transaction: t,
 			});
 
@@ -66,10 +66,12 @@ export class BooksRepository
 							.then(([genre]) => genre),
 					),
 				);
-				await book.$set('genres', genreInstances, { transaction: t });
+				await createdBook.$set('genres', genreInstances, {
+					transaction: t,
+				});
 			}
 
-			return book.reload({
+			return createdBook.reload({
 				include: [Author, Publisher, Genre],
 				transaction: t,
 			});
