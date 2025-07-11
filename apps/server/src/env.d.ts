@@ -1,3 +1,5 @@
+import type { Algorithm as JWTAlgorithm } from 'jsonwebtoken';
+
 export declare global {
 	type MODE = 'development' | 'production' | 'test';
 	type ENV = 'dev' | 'prod';
@@ -16,8 +18,10 @@ export declare global {
 
 			// SECTION: other app settings
 			readonly ALLOWED_ORIGINS: string;
+			readonly MIN_PASSWORD_LENGTH: string; // minimum password length for user registration
 			readonly REQUEST_MAX_JSON_BODY_SIZE: string;
 			readonly REQUEST_TIMEOUT: string;
+			readonly SUPPORTED_LANGS: string;
 
 			// SECTION: database
 			readonly DB_CACHE: booleanString;
@@ -43,10 +47,12 @@ export declare global {
 
 			// SECTION: api security
 			readonly SECURITY_API_KEY: string; // value of the api key header
-			readonly SECURITY_HEADER_NAME: string; // name of the api key header
-			readonly SECURITY_JWT_ALGORITHM: import('jsonwebtoken').Algorithm; // jWT signing algorithm
-			readonly SECURITY_JWT_EXPIRES_IN: string; // jWT token expiration time
-			readonly SECURITY_JWT_SECRET: string; // secret for JWT token signing
+			readonly SECURITY_BCRYPT_SALT_ROUNDS: string; // bcrypt salt rounds for password hashing
+			readonly SECURITY_JWT_ACCESS_TOKEN_EXPIRES_IN: string; // jWT access token expiration time
+			readonly SECURITY_JWT_ACCESS_TOKEN_SECRET: string; // secret for JWT token signing
+			readonly SECURITY_JWT_ALGORITHM: JWTAlgorithm; // jWT signing algorithm
+			readonly SECURITY_JWT_REFRESH_SECRET: string; // secret for JWT refresh token signing
+			readonly SECURITY_JWT_REFRESH_TOKEN_EXPIRES_IN: string; // jWT refresh token expiration time
 			readonly SECURITY_ENABLED?: booleanString;
 		}
 	}

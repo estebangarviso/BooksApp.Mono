@@ -8,10 +8,6 @@ const { dispose } = await start({
 	swagger: env.APP.SWAGGER_ENABLED,
 });
 
-console.info(
-	`\n  \u001B[32m➜\u001B[0m Local: \u001B[36mhttp://localhost:${env.APP.PORT}/${env.APP.BASE_URL}\u001B[0m\n`,
-);
-
 // hot module replacement
 import.meta.hot?.accept();
 import.meta.hot?.dispose(async () => {
