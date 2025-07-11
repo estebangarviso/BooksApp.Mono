@@ -4,29 +4,49 @@ import {
 	HttpCode,
 	HttpStatus,
 	Post,
-	Req,
+	UseGuards,
 } from '@nestjs/common';
-import { type FastifyRequest } from 'fastify';
+import { GetCurrentUserId } from '../../../../libs/decorators/get-current-user-id.decorator';
+import { AuthenticationBasedAccessGuard } from '../../../../libs/guards/abac.guard';
 import { ApplyControllerDocs } from '../../../decorators/docs.decorator';
-import { type TLoginDto } from '../schemas/login.dto';
+import { JwtTokensDto } from '../dtos/jwt-tokens.dto';
+import { LoginBodyDto } from '../dtos/login-body.dto';
+import { LogoutResponseDto } from '../dtos/logout-response.dto';
+import { RefreshAccessTokenDto } from '../dtos/refresh-access-token.dto';
+import { RefreshAuthenticationAccessGuard } from '../guards/refresh-authentication.guard';
 import { AuthService } from '../services/auth.service';
 import { AuthControllerDocs } from './auth.controller.docs';
 
 @ApplyControllerDocs(AuthControllerDocs)
 @Controller('auth')
 export class AuthController {
-	constructor(private authService: AuthService) {}
+	constructor(private readonly _authService: AuthService) {}
 
 	@HttpCode(HttpStatus.OK)
 	@Post('login')
-	signIn(@Body() signInDto: TLoginDto) {
-		return this.authService.signIn(signInDto.username, signInDto.password);
+	login(
+		@Body() loginBodyDto: LoginBodyDto,
+	): Promise<typeof JwtTokensDto.schema.static> {
+		return this._authService.signIn(loginBodyDto);
 	}
 
+	@UseGuards(AuthenticationBasedAccessGuard)
 	@HttpCode(HttpStatus.OK)
 	@Post('logout')
-	async signOut(@Req() req: FastifyRequest & { user: { id: string } }) {
-		await this.authService.signOut(req.user.id);
-		return { message: 'Successfully logged out.' };
+	async logout(
+		@GetCurrentUserId() userId: string,
+	): Promise<typeof LogoutResponseDto.schema.static> {
+		await this._authService.signOut(userId);
+		return { message: 'User logged out successfully' };
+	}
+
+	@UseGuards(RefreshAuthenticationAccessGuard)
+	@Post('refresh')
+	@HttpCode(HttpStatus.OK)
+	refresh(
+		@GetCurrentUserId() userId: string,
+		@Body('refreshToken') refreshToken: string,
+	): Promise<typeof RefreshAccessTokenDto.schema.static> {
+		return this._authService.refreshAccessToken(userId, refreshToken);
 	}
 }

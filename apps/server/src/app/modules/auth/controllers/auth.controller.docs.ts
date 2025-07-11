@@ -1,15 +1,8 @@
-import {
-	ApiBearerAuth,
-	ApiBody,
-	ApiOperation,
-	ApiProduces,
-	ApiQuery,
-	ApiResponse,
-	ApiTags,
-} from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { type DecoratorsLookUp } from '#libs/decorators';
 import { HttpStatusCode } from '#libs/http';
-import { LoginDto } from '../schemas/login.dto';
+import { LoginBodyDto } from '../dtos/login-body.dto';
+import { RefreshAccessTokenDto } from '../dtos/refresh-access-token.dto';
 import { type AuthController } from './auth.controller';
 
 export const AuthControllerDocs: DecoratorsLookUp<AuthController> = {
@@ -23,9 +16,9 @@ export const AuthControllerDocs: DecoratorsLookUp<AuthController> = {
 		],
 	},
 	method: {
-		signIn: [
+		login: [
 			ApiOperation({ summary: 'Log in a user' }),
-			ApiBody({ schema: LoginDto.schema as any }),
+			ApiBody({ schema: LoginBodyDto.refObj }),
 			ApiResponse({
 				description: 'User logged in successfully',
 				status: HttpStatusCode.OK,
@@ -35,7 +28,7 @@ export const AuthControllerDocs: DecoratorsLookUp<AuthController> = {
 				status: HttpStatusCode.UNAUTHORIZED,
 			}),
 		],
-		signOut: [
+		logout: [
 			ApiOperation({ summary: 'Log out a user' }),
 			ApiResponse({
 				description: 'User logged out successfully',
@@ -44,6 +37,20 @@ export const AuthControllerDocs: DecoratorsLookUp<AuthController> = {
 			ApiResponse({
 				description: 'User not found or already logged out',
 				status: HttpStatusCode.NOT_FOUND,
+			}),
+		],
+		refresh: [
+			ApiOperation({ summary: 'Refresh access token' }),
+			ApiBody({
+				schema: RefreshAccessTokenDto.refObj,
+			}),
+			ApiResponse({
+				description: 'Access token refreshed successfully',
+				status: HttpStatusCode.OK,
+			}),
+			ApiResponse({
+				description: 'Invalid or expired refresh token',
+				status: HttpStatusCode.UNAUTHORIZED,
 			}),
 		],
 	},
