@@ -1,6 +1,7 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { type SecuritySchemeObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface.ts';
+import { env } from '#config';
 import { createSecurityGuard, type SecurityGuard } from '#libs/decorators';
 import { FastifyRequest } from 'fastify';
 
@@ -73,20 +74,16 @@ export class ApiKeyGuard implements SecurityGuard {
 	}
 }
 
-const HEADER_NAME = process.env.SECURITY_HEADER_NAME;
-const API_KEY = process.env.SECURITY_API_KEY;
-const ENABLED = process.env.SECURITY_ENABLED === 'true' && !!API_KEY;
-
 export const SECURITY_API_SCHEMA: SecuritySchemeObject = {
 	description: 'Security Api Key',
 	in: 'header',
-	name: HEADER_NAME,
+	name: env.APP.SECURITY.HEADER_NAME,
 	type: 'apiKey',
 };
 
 export const [ApiKey, AllowAnonymous] = createSecurityGuard(
 	ApiKeyGuard,
-	ENABLED,
-	HEADER_NAME,
-	API_KEY,
+	env.APP.SECURITY.ENABLED,
+	env.APP.SECURITY.HEADER_NAME,
+	env.APP.SECURITY.API_KEY,
 );
