@@ -13,8 +13,7 @@ import { AuthModule, BooksModule, UsersModule } from './modules/index.ts';
 })
 export class AppModule implements OnModuleInit {
 	onModuleInit() {
-		this._logger.debug('Module started');
+		this._logger.debug('AppModule initialized');
 	}
-
 	private readonly _logger: Logger = new Logger(AppModule.name);
 }
