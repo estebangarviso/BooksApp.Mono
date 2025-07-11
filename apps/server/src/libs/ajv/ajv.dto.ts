@@ -95,9 +95,6 @@ export const AjvDto = <P extends TProperties = TProperties>(
 	config?: ObjectOptions,
 ) => {
 	return class {
-		static get properties(): P {
-			return this.schema.properties as P;
-		}
 		static schema = Type.Object(properties, config);
 
 		static get refObj(): ReferenceObject {
