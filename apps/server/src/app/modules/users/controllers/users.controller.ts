@@ -1,6 +1,10 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { AuthGuards, RequiredPermits, RequiredRoles } from '#libs/decorators';
-import { Roles } from '#libs/enums';
+import {
+	AuthGuards,
+	RequiredPermissions,
+	RequiredRoles,
+} from '#libs/decorators';
+import { AppPermission, AppRole } from '#libs/enums';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UsersService } from '../services/users.service';
 
@@ -9,8 +13,8 @@ import { UsersService } from '../services/users.service';
 export class UsersController {
 	constructor(private readonly _userService: UsersService) {}
 
-	@RequiredRoles([Roles.ADMIN])
-	@RequiredPermits([Permits.CREATE_USER])
+	@RequiredRoles([AppRole.SUPER_ADMIN])
+	@RequiredPermissions([AppPermission.USERS_CREATE])
 	@Post('create')
 	createUser(@Body() createUserDto: CreateUserDto) {
 		return this._userService.create(createUserDto);

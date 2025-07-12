@@ -44,14 +44,6 @@ export class UsersRepository
 			});
 			if (!role) throw new BadRequestException('Role not found');
 
-			if (user.profile)
-				await this._profileModel.create(
-					{
-						firstName: user.profile.firstName,
-						lastName: user.profile.lastName,
-					} as CreationAttributes<Profile>,
-					{ transaction: t },
-				);
 			const userAttributes = {
 				email: user.email,
 				password: user.password,
@@ -59,6 +51,16 @@ export class UsersRepository
 			const createdUser = await this._userModel.create(userAttributes, {
 				transaction: t,
 			});
+
+			if (user.profile)
+				await this._profileModel.create(
+					{
+						firstName: user.profile.firstName,
+						lastName: user.profile.lastName,
+						userId: createdUser.id,
+					},
+					{ transaction: t },
+				);
 
 			return createdUser.reload({
 				transaction: t,
