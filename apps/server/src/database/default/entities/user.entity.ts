@@ -1,5 +1,6 @@
 import { env } from '#config';
 import * as bcrypt from 'bcryptjs';
+import { Optional } from 'sequelize';
 import {
 	BeforeCreate,
 	BeforeUpdate,
@@ -13,14 +14,30 @@ import {
 	PrimaryKey,
 	Table,
 } from 'sequelize-typescript';
+import { ITimestamps } from '../../common/interfaces';
 import { Profile } from './profile.entity';
 import { Role } from './role.entity';
+
+export interface UserAttributes extends ITimestamps {
+	id: string;
+	email: string;
+	password: string;
+	refreshToken: string | null;
+	roleId: number;
+	tokenVersion: number;
+}
+
+export interface UserCreationAttributes
+	extends Optional<
+		UserAttributes,
+		keyof ITimestamps | 'id' | 'refreshToken' | 'tokenVersion'
+	> {}
 
 @Table({
 	tableName: 'users',
 	timestamps: true,
 })
-export class User extends Model<User> {
+export class User extends Model<UserAttributes, UserCreationAttributes> {
 	@PrimaryKey
 	@Default(DataType.UUIDV4)
 	@Column(DataType.UUID)
@@ -31,30 +48,30 @@ export class User extends Model<User> {
 		type: DataType.STRING(63),
 		unique: true,
 	})
-	email: string;
+	declare email: string;
 
 	@Column({
 		allowNull: false,
 		type: DataType.STRING(64),
 	})
-	password: string;
+	declare password: string;
 
 	@Column({ allowNull: false, defaultValue: 0, type: DataType.INTEGER })
-	tokenVersion: number;
+	declare tokenVersion: number;
 
 	@Column({ allowNull: true, type: DataType.STRING })
 	@Default(null)
-	refreshToken: string | null;
+	declare refreshToken: string | null;
 
 	@ForeignKey(() => Role)
 	@Column(DataType.INTEGER)
-	roleId: number;
+	declare roleId: number;
 
 	@BelongsTo(() => Role)
-	role: Role;
+	declare role: Role;
 
 	@HasOne(() => Profile)
-	profile: Profile;
+	declare profile: Profile;
 
 	/**
 	 * Hashes the password before creating or updating the user.

@@ -1,3 +1,5 @@
+import { AppPermission } from '#libs/enums';
+import { Optional } from 'sequelize';
 import {
 	BelongsToMany,
 	Column,
@@ -8,8 +10,20 @@ import {
 import { RolePermission } from './role-permission.entity';
 import { Role } from './role.entity';
 
+interface PermissionAttributes {
+	id: number;
+	action: AppPermission;
+	description?: string;
+}
+
+export interface PermissionCreationAttributes
+	extends Optional<PermissionAttributes, 'description' | 'id'> {}
+
 @Table({ tableName: 'permissions', timestamps: false })
-export class Permission extends Model<Permission> {
+export class Permission extends Model<
+	PermissionAttributes,
+	PermissionCreationAttributes
+> {
 	@Column({
 		autoIncrement: true,
 		primaryKey: true,
@@ -22,13 +36,13 @@ export class Permission extends Model<Permission> {
 		type: DataType.STRING(100),
 		unique: true,
 	})
-	action: string;
+	declare action: AppPermission;
 
 	@Column({
 		allowNull: true,
 		type: DataType.TEXT,
 	})
-	description: string;
+	declare description: string;
 
 	@BelongsToMany(() => Role, () => RolePermission)
 	roles: Role[];

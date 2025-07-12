@@ -1,3 +1,4 @@
+import { Optional } from 'sequelize';
 import {
 	Column,
 	DataType,
@@ -7,13 +8,22 @@ import {
 	PrimaryKey,
 	Table,
 } from 'sequelize-typescript';
+import { ITimestamps } from '../../common/interfaces';
 import { Book } from './book.entity';
+
+interface AuthorAttributes extends ITimestamps {
+	id: string;
+	name: string;
+}
+
+interface AuthorCreationAttributes
+	extends Optional<AuthorAttributes, keyof ITimestamps | 'id'> {}
 
 @Table({
 	tableName: 'authors',
 	timestamps: true,
 })
-export class Author extends Model<Author> {
+export class Author extends Model<AuthorAttributes, AuthorCreationAttributes> {
 	@PrimaryKey
 	@Default(DataType.UUIDV4)
 	@Column(DataType.UUID)

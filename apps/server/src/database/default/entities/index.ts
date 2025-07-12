@@ -22,13 +22,13 @@ export const ENTITIES = [
 	BookGenre,
 ];
 
-export { Author } from './author.entity';
-export { BookGenre } from './book-genre.entity';
-export { Book } from './book.entity';
-export { Genre } from './genre.entity';
-export { Permission } from './permission.entity';
-export { Profile } from './profile.entity';
-export { Publisher } from './publisher.entity';
-export { RolePermission } from './role-permission.entity';
-export { Role } from './role.entity';
-export { User } from './user.entity';
+export * from './author.entity';
+export * from './book-genre.entity';
+export * from './book.entity';
+export * from './genre.entity';
+export * from './permission.entity';
+export * from './profile.entity';
+export * from './publisher.entity';
+export * from './role-permission.entity';
+export * from './role.entity';
+export * from './user.entity';

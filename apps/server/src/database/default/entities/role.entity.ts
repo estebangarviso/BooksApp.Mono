@@ -1,3 +1,5 @@
+import { AppRole } from '#libs/enums';
+import { Optional } from 'sequelize';
 import {
 	BelongsToMany,
 	Column,
@@ -6,20 +8,19 @@ import {
 	Model,
 	Table,
 } from 'sequelize-typescript';
+import { ITimestamps } from '../../common/interfaces';
 import { Permission } from './permission.entity';
 import { RolePermission } from './role-permission.entity';
 import { User } from './user.entity';
 
-export interface RoleAttributes {
+export interface RoleAttributes extends ITimestamps {
 	id: number;
 	description: string;
-	name: string;
+	name: AppRole;
 }
 
-export interface RoleCreationAttributes {
-	description: string;
-	name: string;
-}
+export interface RoleCreationAttributes
+	extends Optional<RoleAttributes, keyof ITimestamps | 'id'> {}
 
 @Table({
 	tableName: 'roles',
@@ -38,7 +39,7 @@ export class Role extends Model<RoleAttributes, RoleCreationAttributes> {
 		type: DataType.STRING(50),
 		unique: true,
 	})
-	declare name: string;
+	declare name: AppRole;
 
 	@Column({
 		allowNull: false,
@@ -47,8 +48,8 @@ export class Role extends Model<RoleAttributes, RoleCreationAttributes> {
 	declare description: string;
 
 	@HasMany(() => User)
-	users: User[];
+	declare users: User[];
 
 	@BelongsToMany(() => Permission, () => RolePermission)
-	permissions: Permission[];
+	declare permissions: Permission[];
 }

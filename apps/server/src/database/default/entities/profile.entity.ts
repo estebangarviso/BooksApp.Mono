@@ -1,3 +1,4 @@
+import { Optional } from 'sequelize';
 import {
 	BelongsTo,
 	Column,
@@ -8,13 +9,30 @@ import {
 	PrimaryKey,
 	Table,
 } from 'sequelize-typescript';
+import { ITimestamps } from '../../common/interfaces';
 import { User } from './user.entity';
+
+export interface ProfileAttributes extends ITimestamps {
+	id: string;
+	userId: string;
+	firstName?: string;
+	lastName?: string;
+}
+
+export interface ProfileCreationAttributes
+	extends Optional<
+		ProfileAttributes,
+		keyof ITimestamps | 'firstName' | 'id' | 'lastName'
+	> {}
 
 @Table({
 	tableName: 'profiles',
 	timestamps: true,
 })
-export class Profile extends Model<Profile> {
+export class Profile extends Model<
+	ProfileAttributes,
+	ProfileCreationAttributes
+> {
 	@PrimaryKey
 	@Default(DataType.UUIDV4)
 	@Column(DataType.UUID)
@@ -24,13 +42,13 @@ export class Profile extends Model<Profile> {
 		allowNull: true,
 		type: DataType.STRING,
 	})
-	firstName: string;
+	declare firstName: string;
 
 	@Column({
 		allowNull: true,
 		type: DataType.STRING,
 	})
-	lastName: string;
+	declare lastName: string;
 
 	@ForeignKey(() => User)
 	@Column({
@@ -38,8 +56,8 @@ export class Profile extends Model<Profile> {
 		type: DataType.UUID,
 		unique: true,
 	})
-	userId: string;
+	declare userId: string;
 
 	@BelongsTo(() => User)
-	user: User;
+	declare user: User;
 }

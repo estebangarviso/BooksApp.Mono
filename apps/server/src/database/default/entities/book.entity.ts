@@ -1,3 +1,4 @@
+import { Optional } from 'sequelize';
 import {
 	BelongsTo,
 	BelongsToMany,
@@ -13,17 +14,37 @@ import {
 	Table,
 	UpdatedAt,
 } from 'sequelize-typescript';
+import { IDeletedAt, ITimestamps } from '../../common/interfaces';
 import { Author } from './author.entity';
 import { BookGenre } from './book-genre.entity';
 import { Genre } from './genre.entity';
 import { Publisher } from './publisher.entity';
+import { User } from './user.entity';
+
+export interface BookAttributes extends IDeletedAt, ITimestamps {
+	id: string;
+	authorId: string;
+	availability: boolean;
+	creatorId: string;
+	price: number;
+	publisherId: string;
+	title: string;
+	imageUrl?: string;
+	isbn?: string;
+}
+
+export interface BookCreationAttributes
+	extends Optional<
+		BookAttributes,
+		keyof IDeletedAt | keyof ITimestamps | 'id' | 'imageUrl' | 'isbn'
+	> {}
 
 @Table({
 	paranoid: true, // enables soft deletes
 	tableName: 'books',
 	timestamps: true,
 })
-export class Book extends Model<Book> {
+export class Book extends Model<BookAttributes, BookCreationAttributes> {
 	@PrimaryKey
 	@Default(DataType.UUIDV4)
 	@Column(DataType.UUID)
@@ -31,37 +52,41 @@ export class Book extends Model<Book> {
 
 	@Index
 	@Column({ allowNull: true, type: DataType.STRING(13), unique: true })
-	isbn?: string;
+	declare isbn?: string;
 
 	@Index
 	@Column({ allowNull: false, type: DataType.STRING })
-	title: string;
+	declare title: string;
 
 	@Column({ allowNull: false, type: DataType.DECIMAL(10, 2) })
-	price: number;
+	declare price: number;
 
 	@Column({ allowNull: false, defaultValue: true, type: DataType.BOOLEAN })
-	availability: boolean;
+	declare availability: boolean;
 
 	@Column({ allowNull: true, type: DataType.STRING(2048) })
-	imageUrl?: string;
+	declare imageUrl?: string;
 
 	@ForeignKey(() => Author)
 	@Column(DataType.UUID)
-	authorId: string;
+	declare authorId: string;
+
+	@ForeignKey(() => User)
+	@Column(DataType.UUID)
+	declare creatorId?: string;
 
 	@BelongsTo(() => Author)
-	author: Author;
+	declare author: Author;
 
 	@ForeignKey(() => Publisher)
 	@Column(DataType.UUID)
-	publisherId: string;
+	declare publisherId: string;
 
 	@BelongsTo(() => Publisher)
-	publisher: Publisher;
+	declare publisher: Publisher;
 
 	@BelongsToMany(() => Genre, () => BookGenre)
-	genres: Genre[];
+	declare genres: Genre[];
 
 	@CreatedAt
 	declare createdAt: Date;

@@ -1,3 +1,4 @@
+import { Optional } from 'sequelize';
 import {
 	Column,
 	DataType,
@@ -7,13 +8,25 @@ import {
 	PrimaryKey,
 	Table,
 } from 'sequelize-typescript';
+import { ITimestamps } from '../../common/interfaces';
 import { Book } from './book.entity';
+
+interface PublisherAttributes extends ITimestamps {
+	id: string;
+	name: string;
+}
+
+export interface PublisherCreationAttributes
+	extends Optional<PublisherAttributes, keyof ITimestamps | 'id'> {}
 
 @Table({
 	tableName: 'publishers',
 	timestamps: true,
 })
-export class Publisher extends Model<Publisher> {
+export class Publisher extends Model<
+	PublisherAttributes,
+	PublisherCreationAttributes
+> {
 	@PrimaryKey
 	@Default(DataType.UUIDV4)
 	@Column(DataType.UUID)
@@ -24,8 +37,8 @@ export class Publisher extends Model<Publisher> {
 		type: DataType.STRING,
 		unique: true,
 	})
-	name: string;
+	declare name: string;
 
 	@HasMany(() => Book)
-	books: Book[];
+	declare books: Book[];
 }

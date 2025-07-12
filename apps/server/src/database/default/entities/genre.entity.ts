@@ -1,3 +1,4 @@
+import { Optional } from 'sequelize';
 import {
 	BelongsToMany,
 	Column,
@@ -7,14 +8,23 @@ import {
 	PrimaryKey,
 	Table,
 } from 'sequelize-typescript';
+import { ITimestamps } from '../../common/interfaces';
 import { BookGenre } from './book-genre.entity';
 import { Book } from './book.entity';
+
+export interface GenreAttributes extends ITimestamps {
+	id: string;
+	name: string;
+}
+
+export interface GenreCreationAttributes
+	extends Optional<GenreAttributes, keyof ITimestamps | 'id'> {}
 
 @Table({
 	tableName: 'genres',
 	timestamps: true,
 })
-export class Genre extends Model<Genre> {
+export class Genre extends Model<GenreAttributes, GenreCreationAttributes> {
 	@PrimaryKey
 	@Default(DataType.UUIDV4)
 	@Column(DataType.UUID)
@@ -25,8 +35,8 @@ export class Genre extends Model<Genre> {
 		type: DataType.STRING(100),
 		unique: true,
 	})
-	name: string;
+	declare name: string;
 
 	@BelongsToMany(() => Book, () => BookGenre)
-	books: Book[];
+	declare books: Book[];
 }
