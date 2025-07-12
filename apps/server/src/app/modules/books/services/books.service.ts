@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
 import { Book } from '#db';
 import { Op } from 'sequelize';
 import { CreateBookDto } from '../dtos/create-book.dto';
@@ -8,6 +13,7 @@ import {
 	BOOKS_REPOSITORY,
 	type IBooksRepository,
 } from '../interfaces/books.repository.interface';
+import { isIsbn } from '../utils/type-validators.util';
 
 @Injectable()
 export class BooksService {
@@ -101,25 +107,40 @@ export class BooksService {
 			sortBy = 'title',
 			sortOrder = 'asc',
 		} = options || {};
+		const orArray: { [key: string]: any }[] = [];
+		const isValidFilled =
+			typeof search === 'string' && search.trim().length > 0;
+		if (!isValidFilled) {
+			throw new BadRequestException(
+				'Search term must be a non-empty string.',
+			);
+		}
+		const isValidIsbn = isIsbn(search);
+
+		if (isValidIsbn) {
+			// exact match for ISBN
+			orArray.push({ isbn: search });
+		} else {
+			// search by title, author name, or publisher name
+			orArray.push(
+				{ title: { [Op.iLike]: `%${search}%` } },
+				{ '$author.name$': { [Op.iLike]: `%${search}%` } },
+				{
+					'$publisher.name$': {
+						[Op.iLike]: `%${search}%`,
+					},
+				},
+			);
+		}
 		const result = await this.booksRepository.paginate({
 			paranoid: !includeDeleted,
 			include: ['author', 'publisher', 'genres'],
 			limit,
 			offset: (page - 1) * limit,
 			order: [[sortBy, sortOrder.toUpperCase()]],
-			where: search
-				? {
-						[Op.or]: [
-							{ title: { [Op.iLike]: `%${search}%` } },
-							{ '$author.name$': { [Op.iLike]: `%${search}%` } },
-							{
-								'$publisher.name$': {
-									[Op.iLike]: `%${search}%`,
-								},
-							},
-						],
-					}
-				: {},
+			where: {
+				[Op.or]: orArray,
+			},
 		});
 
 		if (result.count === 0) {

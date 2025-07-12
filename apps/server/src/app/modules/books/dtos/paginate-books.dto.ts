@@ -23,8 +23,9 @@ export class PaginateBooksDto extends AjvDto({
 	),
 	search: Type.Optional(
 		Type.String({
-			description: 'Search term to filter books',
 			example: 'Harry Potter',
+			description:
+				'Search term to filter books by title, author, publisher, or ISBN',
 		}),
 	),
 	sortBy: Type.Optional(
