@@ -53,8 +53,44 @@ Before proceeding, make sure you have the following installed on your machine:
 
 __*Important: Allow docker to create volumes in this directory. For Docker Desktop, go to Settings -> Resources -> File Sharing and add the directory where you cloned this repository.*__
 
-## Getting Started
+## Managing the Application
 
+This monorepo uses pnpm workspaces to manage the frontend and backend applications. You can run commands for each application using the following syntax:
+
+```bash
+pnpm --filter <package-name> <command>
+# Example:
+pnpm --filter @c2c/client install <package-name>
+```
+
+## Maintaining the Application
+
+To maintain the application, you must ensure packages are up to date and dependencies are managed correctly. Use the following commands:
+
+```bash
+pnpm update
+pnpm install
+pnpm run test:<environment>
+```
+
+If something goes wrong, you have to roll back to a previous commit or branch. You can do this using Git commands:
+
+```bash
+git checkout <commit-hash>
+# or
+git checkout <branch-name>
+```
+
+Some of the packages that have conflicts with the latest versions of Node.js or PNPM are:
+
+- `@nestjs/platform-fastify`
+- `@fastify/multipart`
+- `@fastify/static`
+- `fastify`
+
+Check `node_modules/<package-name>/package.json` for the specific versions that are compatible with your setup.
+
+## Getting Started
 
 1. Clone the repository:
 
@@ -81,16 +117,6 @@ __*Important: Allow docker to create volumes in this directory. For Docker Deskt
 5. Access the application:
 
     Open your web browser and go to `http://localhost:3003` to access the frontend, and `http://localhost:4004` to access the backend producer API.
-
-## Managing the Application
-
-This monorepo uses pnpm workspaces to manage the frontend and backend applications. You can run commands for each application using the following syntax:
-
-```bash
-pnpm --filter <package-name> <command>
-# Example:
-pnpm --filter @c2c/client install <package-name>
-```
 
 ## Stopping the docker compose services
 
