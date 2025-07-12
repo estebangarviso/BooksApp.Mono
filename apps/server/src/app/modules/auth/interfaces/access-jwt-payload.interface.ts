@@ -1,4 +1,4 @@
-import { type Permits } from '../../../../libs/enums/permits.enum';
+import { type AppPermission } from '../../../../libs/enums/permissions.enum';
 
 export interface AccessJwtPayload {
 	/**
@@ -24,5 +24,5 @@ export interface AccessJwtPayloadWithRefreshToken extends AccessJwtPayload {
 	/**
 	 * Optional field to include additional data.
 	 */
-	permits?: Permits[];
+	permissions?: AppPermission[];
 }
