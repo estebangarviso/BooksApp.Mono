@@ -1,6 +1,7 @@
 import {
 	ArgumentMetadata,
 	BadRequestException,
+	HttpStatus,
 	Inject,
 	Injectable,
 	PipeTransform,
@@ -65,17 +66,15 @@ export class AjvValidationPipe implements PipeTransform {
 		// localize the error messages using the localize function
 		localize[locale](validate.errors);
 
-		// format errors for a clean API response
-		const errors =
-			validate.errors?.map((error) => {
-				// clean up the instance path for better readability
-				const field = error.instancePath
-					? error.instancePath.slice(1)
-					: error.keyword;
-				return `${field}: ${error.message}`;
-			}) || [];
-
-		throw new BadRequestException(errors);
+		// throw a BadRequestException with the formatted error messages
+		throw new BadRequestException({
+			message: 'Validation failed',
+			errors:
+				validate.errors?.map((err) => ({
+					field: err.instancePath.replace(/^\//u, ''),
+					message: err.message,
+				})) || [],
+		});
 	}
 
 	/**

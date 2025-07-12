@@ -1,8 +1,11 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { User } from '#db';
-import { Roles } from '#libs/enums';
-import { REQUIRED_PERMITS, REQUIRED_ROLES } from '../decorators/auth.decorator';
+import { AppPermission, AppRole } from '#libs/enums';
+import {
+	REQUIRED_PERMISSIONS,
+	REQUIRED_ROLES,
+} from '../decorators/auth.decorator';
 
 /**
  * Permissions guard.
@@ -25,15 +28,15 @@ export class RoleBasedAccessGuard implements CanActivate {
 			return false; // no user or role attached to the request
 		}
 		// super admin has all permissions and roles, so we allow access
-		if (user.role.name === Roles.SUPER_ADMIN) {
+		if (user.role.name === AppRole.SUPER_ADMIN) {
 			return true;
 		}
 		const requiredRoles = this.reflector.getAllAndOverride<
-			string[] | undefined
+			AppRole[] | undefined
 		>(REQUIRED_ROLES, [context.getHandler(), context.getClass()]);
 		const requiredPermissions = this.reflector.getAllAndOverride<
-			string[] | undefined
-		>(REQUIRED_PERMITS, [context.getHandler(), context.getClass()]);
+			AppPermission[] | undefined
+		>(REQUIRED_PERMISSIONS, [context.getHandler(), context.getClass()]);
 
 		return (
 			this.hasRole(user, requiredRoles) &&
@@ -47,7 +50,10 @@ export class RoleBasedAccessGuard implements CanActivate {
 	 * @param permissions - The required permissions.
 	 * @returns {boolean} - Returns true if the user has the required permission, false otherwise.
 	 */
-	hasPermission(user: User, requiredPermissions: string[] = []): boolean {
+	hasPermission(
+		user: User,
+		requiredPermissions: AppPermission[] = [],
+	): boolean {
 		if (requiredPermissions.length === 0) {
 			return true; // no permissions required, access granted
 		}
@@ -65,7 +71,7 @@ export class RoleBasedAccessGuard implements CanActivate {
 	 * @param roles - The required roles.
 	 * @returns {boolean} - Returns true if the user has the required role, false otherwise.
 	 */
-	hasRole(user: User, roles: string[] = []): boolean {
+	hasRole(user: User, roles: AppRole[] = []): boolean {
 		if (roles.length === 0) {
 			return true; // no roles required, access granted
 		}

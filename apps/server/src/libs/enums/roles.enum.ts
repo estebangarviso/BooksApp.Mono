@@ -1,8 +1,7 @@
-export enum Roles {
-	ADMIN = 'ADMIN',
+export enum AppRole {
+	SUPER_ADMIN = 'ADMIN',
 	EDITOR = 'EDITOR',
 	GUEST = 'GUEST',
-	MODERATOR = 'MODERATOR',
 	PUBLISHER = 'PUBLISHER',
 	SUPER_ADMIN = 'SUPER_ADMIN',
 }

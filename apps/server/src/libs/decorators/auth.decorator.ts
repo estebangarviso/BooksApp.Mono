@@ -15,7 +15,7 @@ export const REQUIRED_ROLES = Symbol('required-roles');
  * Symbol to mark a route as requiring specific permissions.
  * This is useful for routes that require role-based access control.
  */
-export const REQUIRED_PERMITS = Symbol('required-permits');
+export const REQUIRED_PERMISSIONS = Symbol('required-permissions');
 
 /**
  * Decorator to mark a route as requiring a specific permission.
@@ -33,8 +33,8 @@ export const REQUIRED_PERMITS = Symbol('required-permits');
  * }
  * ```
  */
-export const RequiredPermits = (permissions: string[]): MethodDecorator =>
-	SetMetadata(REQUIRED_PERMITS, permissions);
+export const RequiredPermissions = (permissions: string[]): MethodDecorator =>
+	SetMetadata(REQUIRED_PERMISSIONS, permissions);
 
 /**
  * Decorator to mark a route as requiring specific roles.

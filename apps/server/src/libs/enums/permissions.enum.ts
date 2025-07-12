@@ -1,4 +1,4 @@
-export enum Permits {
+export enum AppPermission {
 	// books
 	BOOKS_CREATE = 'books:create',
 	BOOKS_DELETE = 'books:delete',
