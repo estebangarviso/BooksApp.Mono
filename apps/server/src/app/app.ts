@@ -1,6 +1,11 @@
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
 import { type INestApplication, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
+import {
+	FastifyAdapter,
+	type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import {
 	DocumentBuilder,
 	type SwaggerCustomOptions,
@@ -11,6 +16,7 @@ import { seedDatabase } from '#db';
 import { AjvValidationPipe, registerDtoOpenApiSchemas } from '#libs/ajv';
 import { json } from 'body-parser';
 import type { Server } from 'node:http';
+import path from 'node:path';
 import { Sequelize } from 'sequelize-typescript';
 import { AppModule } from './app.module.ts';
 import {
@@ -76,10 +82,18 @@ export const addSwagger = (app: INestApplication, prefix: string) => {
 export const start = async ({ port = 0, prefix, swagger }: AppStartConfig) => {
 	const logger = new Logger('Bootstrap');
 	const adapter = new FastifyAdapter();
-	const app = await NestFactory.create(AppModule, adapter, {
-		cors: {
-			origin: env.APP.ALLOWED_ORIGINS,
-		},
+	const app = await NestFactory.create<NestFastifyApplication>(
+		AppModule,
+		adapter,
+	);
+	app.enableCors({
+		origin: env.APP.ALLOWED_ORIGINS,
+	});
+	// register Fastify plugins
+	await app.register(fastifyMultipart);
+	await app.register(fastifyStatic, {
+		prefix: '/public/',
+		root: path.join(path.dirname(''), '../../public'),
 	});
 	app.enableVersioning();
 	app.setGlobalPrefix(prefix);
@@ -98,8 +112,8 @@ export const start = async ({ port = 0, prefix, swagger }: AppStartConfig) => {
 
 	await app.listen(port, '0.0.0.0');
 	logger.log(`Application is running on: ${await app.getUrl()}/${prefix}`);
-
-	await seedDatabase();
+	const sequelize = app.get(Sequelize);
+	await seedDatabase(sequelize, logger);
 	const dispose = async () => {
 		const server = app.getHttpServer() as Server;
 		server.closeAllConnections();
