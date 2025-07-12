@@ -652,7 +652,7 @@ export default [
 			'unicorn/consistent-function-scoping': OFF,
 			'unicorn/no-unsafe-regex': OFF,
 			'vitest/expect-expect': OFF,
-			'vitest/max-expects': WARN,
+			'vitest/max-expects': [WARN, { max: 10 }],
 			'vitest/max-nested-describe': WARN,
 			'vitest/no-alias-methods': ERROR,
 			'vitest/no-conditional-expect': WARN,
