@@ -53,6 +53,8 @@ export declare global {
 			readonly SECURITY_JWT_ALGORITHM: JWTAlgorithm; // jWT signing algorithm
 			readonly SECURITY_JWT_REFRESH_SECRET: string; // secret for JWT refresh token signing
 			readonly SECURITY_JWT_REFRESH_TOKEN_EXPIRES_IN: string; // jWT refresh token expiration time
+			readonly SECURITY_SUPER_ADMIN_EMAIL: string; // email for the super admin user
+			readonly SECURITY_SUPER_ADMIN_PASS: string; // password for the super admin user
 			readonly SECURITY_ENABLED?: booleanString;
 		}
 	}
