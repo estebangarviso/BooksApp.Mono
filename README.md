@@ -4,7 +4,7 @@ This README provides instructions on how to run a fullstack application which us
 
 ## Tasks Overview
 
-### Frontend (Client):
+### Frontend (Client): 🔨
 - Authentication login
 - Develop a book list with the following features:
   - Advanced filtering by genre, publisher, author, and availability.
@@ -16,7 +16,7 @@ This README provides instructions on how to run a fullstack application which us
   - Upload one image per book.
 - View available data about a book
 
-### Backend (Server):
+### Backend (Server): ✅
 -  Design a modular and scalable architecture using SOLID principles.
 -  Implement a JWT authentication system.
 -  Develop RESTful endpoints for all ledger CRUD operations.
@@ -25,13 +25,13 @@ This README provides instructions on how to run a fullstack application which us
 -  Use soft delete techniques to handle deletions.
 -  Implement a logging system for auditing operations.
 
-## Database:
+## Database: ✅
 - Design a normalized data model that includes:
    - Appropriate relationships between tables.
    - Indexes to optimize frequent queries.
 - Use transactions to ensure data integrity in critical operations.
 
-## Testing:
+## Testing: ✅
 -  Implement unit tests for components and services in Nest.
 -  Create unit tests for services and controllers in NestJS.
 -  Achieve code coverage of at least 80%.
