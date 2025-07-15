@@ -36,7 +36,8 @@ export class Role extends Model<RoleAttributes, RoleCreationAttributes> {
 
 	@Column({
 		allowNull: false,
-		type: DataType.STRING(50),
+		defaultValue: AppRole.GUEST,
+		type: DataType.ENUM(...Object.values(AppRole)),
 		unique: true,
 	})
 	declare name: AppRole;

@@ -33,7 +33,7 @@ export class Permission extends Model<
 
 	@Column({
 		allowNull: false,
-		type: DataType.STRING(100),
+		type: DataType.ENUM(...Object.values(AppPermission)),
 		unique: true,
 	})
 	declare action: AppPermission;

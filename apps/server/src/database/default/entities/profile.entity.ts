@@ -20,10 +20,7 @@ export interface ProfileAttributes extends ITimestamps {
 }
 
 export interface ProfileCreationAttributes
-	extends Optional<
-		ProfileAttributes,
-		keyof ITimestamps | 'firstName' | 'id' | 'lastName'
-	> {}
+	extends Optional<ProfileAttributes, keyof ITimestamps | 'id'> {}
 
 @Table({
 	tableName: 'profiles',

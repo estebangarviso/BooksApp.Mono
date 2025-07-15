@@ -1,1 +1,1 @@
-export { BaseRepository, type IBaseRepository } from './base.repository';
+export * from './base.repository';

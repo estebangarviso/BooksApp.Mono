@@ -21,6 +21,8 @@ import { Role } from './role.entity';
 export interface UserAttributes extends ITimestamps {
 	id: string;
 	email: string;
+	isActive: boolean;
+	mustChangePassword: boolean;
 	password: string;
 	refreshToken: string | null;
 	roleId: number;
@@ -30,7 +32,12 @@ export interface UserAttributes extends ITimestamps {
 export interface UserCreationAttributes
 	extends Optional<
 		UserAttributes,
-		keyof ITimestamps | 'id' | 'refreshToken' | 'tokenVersion'
+		| keyof ITimestamps
+		| 'id'
+		| 'isActive'
+		| 'mustChangePassword'
+		| 'refreshToken'
+		| 'tokenVersion'
 	> {}
 
 @Table({
@@ -56,11 +63,16 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
 	})
 	declare password: string;
 
+	@Column({ defaultValue: true, type: DataType.BOOLEAN })
+	declare mustChangePassword: boolean;
+
+	@Column({ allowNull: false, defaultValue: true, type: DataType.BOOLEAN })
+	declare isActive: boolean;
+
 	@Column({ allowNull: false, defaultValue: 0, type: DataType.INTEGER })
 	declare tokenVersion: number;
 
-	@Column({ allowNull: true, type: DataType.STRING })
-	@Default(null)
+	@Column({ allowNull: true, defaultValue: null, type: DataType.STRING })
 	declare refreshToken: string | null;
 
 	@ForeignKey(() => Role)
@@ -87,6 +99,14 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
 		const salt = await bcrypt.genSalt(env.APP.SECURITY.BCRYPT.SALT_ROUNDS);
 		const hashedPassword = await bcrypt.hash(plainPassword, salt);
 		instance.setDataValue('password', hashedPassword);
+	}
+
+	/**
+	 * Checks if the user has access based on their active status and password change requirement.
+	 * @returns {boolean} True if the user is active and does not require a password change, false otherwise.
+	 */
+	hasAccess(): boolean {
+		return this.isActive && !this.mustChangePassword;
 	}
 
 	/**
@@ -119,10 +139,14 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
 	 * @returns {Promise<void>}
 	 */
 	async updateRefreshToken(refreshToken: string | null): Promise<void> {
+		if (refreshToken === null) {
+			this.refreshToken = null;
+			await this.save();
+			return;
+		}
 		const salt = await bcrypt.genSalt(env.APP.SECURITY.BCRYPT.SALT_ROUNDS);
-		const hashedRefreshToken = refreshToken
-			? await bcrypt.hash(refreshToken, salt)
-			: null;
+		const hashedRefreshToken = await bcrypt.hash(refreshToken, salt);
+
 		this.refreshToken = hashedRefreshToken;
 		await this.save();
 	}
