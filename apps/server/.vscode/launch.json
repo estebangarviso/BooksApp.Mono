@@ -19,7 +19,7 @@
 			"console": "integratedTerminal",
 			"serverReadyAction": {
 				"action": "openExternally",
-				"pattern": "\\bLocal:\\s+(https?://\\S+)"
+				"pattern": "\\bApplication is running on:\\s+(https?://\\S+)"
 			}
 		},
 		{
@@ -44,7 +44,7 @@
 				"**/node_modules/**"
 			],
 			"console": "integratedTerminal",
-			"internalConsoleOptions": "neverOpen"
+			"internalConsoleOptions": "neverOpen",
 		},
 		{
 			"name": "Test All",
@@ -67,7 +67,7 @@
 				"**/node_modules/**"
 			],
 			"console": "integratedTerminal",
-			"internalConsoleOptions": "neverOpen"
+			"internalConsoleOptions": "neverOpen",
 		}
 	],
 	"inputs": [
