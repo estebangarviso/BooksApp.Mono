@@ -1,8 +1,15 @@
-import { type Book, type BookAttributes, type IBaseRepository } from '#db';
+import {
+	type Book,
+	type BookAttributes,
+	type IBaseRepository,
+	type PaginateResult,
+} from '#db';
 import {
 	type Attributes,
 	type CreateOptions,
 	type FindOptions,
+	type Order,
+	type WhereOptions,
 } from 'sequelize';
 import { type CreateBookDto } from '../dtos/create-book.dto';
 import type { CreatedBookDto } from '../dtos/created-book.dto.ts';
@@ -25,4 +32,11 @@ export interface IBooksRepository extends IBaseRepository<Book> {
 		title: string,
 		options?: Omit<FindOptions<BookAttributes>, 'where'>,
 	): Promise<Book | null>;
+	paginateBooks(
+		currentPage: number,
+		limit: number,
+		order: Order,
+		includeDeleted?: boolean,
+		where?: WhereOptions<BookAttributes>,
+	): Promise<PaginateResult<Book>>;
 }

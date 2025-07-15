@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import {
 	Author,
@@ -6,16 +6,16 @@ import {
 	Book,
 	BookAttributes,
 	Genre,
+	PaginateResult,
 	Publisher,
 } from '#db';
 import {
-	Attributes,
-	CreateOptions,
 	CreationAttributes,
 	FindOptions,
+	Order,
+	WhereOptions,
 } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import type { C } from 'vitest/dist/chunks/environment.d.cL3nLXbE.js';
 import { CreateBookDto } from '../dtos/create-book.dto';
 import type { PaginatedBookDto } from '../dtos/paginated-book.dto.ts';
 import { IBooksRepository } from '../interfaces/books.repository.interface';
@@ -170,5 +170,58 @@ export class BooksRepository
 		}.bind(this);
 
 		return asyncGenerator();
+	}
+
+	/**
+	 * Paginates books based on the provided criteria.
+	 * This method supports searching by title, author, or ISBN.
+	 * It returns a paginated result with books and their details.
+	 *
+	 * @param currentPage - The current page number (1-based).
+	 * @param limit - The number of records per page.
+	 * @param order - The order in which to sort the results.
+	 * @param includeDeleted - Whether to include soft-deleted books.
+	 * @param orArray - Additional conditions to apply in the search.
+	 * @returns A paginated result containing books and their details.
+	 * @throws {BadRequestException} if currentPage or limit is less than 1.
+	 * @throws {NotFoundException} if no books are found matching the criteria.
+	 * @throws {Error} if an unexpected error occurs during pagination.
+	 *
+	 * @example
+	 * const result = await booksRepository.paginateBooks(1, 10, [['title', 'ASC']]);
+	 * console.log(result);
+	 * // Output: PaginatedResult<Book> with books sorted by title in ascending order.
+	 */
+	paginateBooks(
+		currentPage: number,
+		limit: number,
+		order: Order,
+		includeDeleted = false,
+		where: WhereOptions<BookAttributes> = {},
+	): Promise<PaginateResult<Book>> {
+		if (currentPage < 1)
+			throw new BadRequestException(
+				'Current page must be greater than 0',
+			);
+		if (limit < 1)
+			throw new BadRequestException('Limit must be greater than 0');
+
+		return this.paginate(currentPage, limit, {
+			paranoid: includeDeleted,
+			include: [Author, Publisher, Genre],
+			order,
+			where,
+			attributes: [
+				'id',
+				'isbn',
+				'title',
+				['$author.name$', 'authorName'],
+				['$publisher.name$', 'publisherName'],
+				'price',
+				'availability',
+				'imageUrl',
+				['$genres.name$', 'genres'],
+			],
+		});
 	}
 }

@@ -1,0 +1,77 @@
+import { type CallHandler, type ExecutionContext } from '@nestjs/common';
+import {
+	type Author,
+	type Book,
+	type Genre,
+	type PaginateResult,
+	type Publisher,
+} from '#db';
+import { lastValueFrom, of } from 'rxjs';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { type PaginatedBookDto } from '../dtos/paginated-book.dto';
+import { PaginateBooksInterceptor } from './paginate-books.interceptor';
+
+describe('PaginateBooksInterceptor', () => {
+	let interceptor: PaginateBooksInterceptor;
+
+	beforeEach(() => {
+		interceptor = new PaginateBooksInterceptor();
+	});
+
+	it('should be defined', () => {
+		expect(interceptor).toBeDefined();
+	});
+
+	it('should map PaginateResult<Book> to PaginateResult<PaginatedBookDto>', async () => {
+		const mockBook: Book = {
+			id: '1',
+			author: { id: '1', name: 'Test Author' } as Author,
+			availability: true,
+			createdAt: new Date(),
+			genres: [{ id: '1', name: 'Fiction' }] as Genre[],
+			imageUrl: 'http://example.com/image.png',
+			isbn: '978-3-16-148410-0',
+			price: 29.99,
+			publisher: { id: '1', name: 'Test Publisher' } as Publisher,
+			title: 'Test Book',
+			updatedAt: new Date(),
+		} as Book;
+
+		const paginatedResult: PaginateResult<Book> = {
+			currentPage: 1,
+			data: [mockBook],
+			hasMorePages: false,
+			lastPage: 1,
+			totalRecords: 1,
+		};
+
+		const mockExecutionContext = {} as ExecutionContext;
+		const mockCallHandler: CallHandler = {
+			handle: () => of([paginatedResult]), // the interceptor expects an array of PaginateResult
+		};
+
+		const result = (await lastValueFrom(
+			interceptor.intercept(mockExecutionContext, mockCallHandler),
+		)) as PaginateResult<PaginatedBookDto>[];
+
+		const expectedDto: typeof PaginatedBookDto.schema.static = {
+			id: '1',
+			authorName: 'Test Author',
+			availability: true,
+			genres: ['Fiction'],
+			imageUrl: 'http://example.com/image.png',
+			isbn: '978-3-16-148410-0',
+			price: 29.99,
+			publisherName: 'Test Publisher',
+			title: 'Test Book',
+		};
+
+		expect(result).toBeInstanceOf(Array);
+		expect(result).toHaveLength(1);
+		const transformedResult = result[0];
+		expect(transformedResult.data[0]).toStrictEqual(expectedDto);
+		expect(transformedResult.totalRecords).toBe(
+			paginatedResult.totalRecords,
+		);
+	});
+});

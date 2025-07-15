@@ -4,13 +4,12 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
-import { Book, type PaginateResult } from '#db';
+import { Book, BookAttributes, type PaginateResult } from '#db';
 import { stringify } from 'csv-stringify';
-import { Op } from 'sequelize';
+import { Op, Order, WhereOptions } from 'sequelize';
 import { CreateBookDto } from '../dtos/create-book.dto';
 import type { CreatedBookDto } from '../dtos/created-book.dto.ts';
 import { PaginateBooksDto } from '../dtos/paginate-books.dto';
-import { PaginatedBookDto } from '../dtos/paginated-book.dto';
 import { UpdateBookDto } from '../dtos/update-book.dto';
 import {
 	BOOKS_REPOSITORY,
@@ -135,7 +134,7 @@ export class BooksService {
 	 */
 	async search(
 		options?: typeof PaginateBooksDto.schema.static,
-	): Promise<PaginateResult<typeof PaginatedBookDto.schema.static>> {
+	): Promise<PaginateResult<Book>> {
 		const {
 			includeDeleted = false,
 			limit = 10,
@@ -144,7 +143,7 @@ export class BooksService {
 			sortBy = 'title',
 			sortOrder = 'asc',
 		} = options || {};
-		const orArray: { [key: string]: any }[] = [];
+		const order: Order = [[sortBy, sortOrder.toUpperCase()]];
 		const isValidFilled =
 			typeof search === 'string' && search.trim().length > 0;
 		if (!isValidFilled) {
@@ -154,42 +153,26 @@ export class BooksService {
 		}
 		const isValidIsbn = isIsbn(search);
 
-		if (isValidIsbn) {
-			// exact match for ISBN
-			orArray.push({ isbn: search });
-		} else {
-			// search by title, author name, or publisher name
-			orArray.push(
-				{ title: { [Op.iLike]: `%${search}%` } },
-				{ '$author.name$': { [Op.iLike]: `%${search}%` } },
-				{
-					'$publisher.name$': {
-						[Op.iLike]: `%${search}%`,
-					},
-				},
-			);
-		}
-		const result = await this.booksRepository.paginate<
-			typeof PaginatedBookDto.schema.static
-		>(currentPage, limit, {
-			paranoid: !includeDeleted,
-			include: ['author', 'publisher', 'genres'],
-			order: [[sortBy, sortOrder.toUpperCase()]],
-			attributes: [
-				'id',
-				'isbn',
-				'title',
-				['$author.name$', 'authorName'],
-				['$publisher.name$', 'publisherName'],
-				'price',
-				'availability',
-				'imageUrl',
-				['$genres.name$', 'genres'],
-			],
-			where: {
-				[Op.or]: orArray,
-			},
-		});
+		const where: WhereOptions<BookAttributes> = isValidIsbn
+			? { isbn: search }
+			: {
+					[Op.or]: [
+						{ title: { [Op.iLike]: `%${search}%` } },
+						{ '$author.name$': { [Op.iLike]: `%${search}%` } },
+						{
+							'$publisher.name$': {
+								[Op.iLike]: `%${search}%`,
+							},
+						},
+					],
+				};
+		const result = await this.booksRepository.paginateBooks(
+			currentPage,
+			limit,
+			order,
+			includeDeleted,
+			where,
+		);
 
 		if (result.totalRecords === 0) {
 			throw new NotFoundException(

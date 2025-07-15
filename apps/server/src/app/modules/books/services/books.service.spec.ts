@@ -22,6 +22,7 @@ const mockBooksRepository: IBooksRepository = {
 	findByTitle: vi.fn(),
 	findOne: vi.fn(),
 	paginate: vi.fn(),
+	paginateBooks: vi.fn(),
 	update: vi.fn(),
 };
 
@@ -236,13 +237,13 @@ describe('BooksService', () => {
 				count: 1,
 				rows: [{ id: '1', title: 'Test Book' }],
 			};
-			vi.spyOn(repository, 'paginate').mockResolvedValue(
+			vi.spyOn(repository, 'paginateBooks').mockResolvedValue(
 				paginatedResult as any,
 			);
 
 			const result = await service.search(options);
 
-			expect(repository.paginate).toHaveBeenCalled();
+			expect(repository.paginateBooks).toHaveBeenCalled();
 			expect(result).toStrictEqual({
 				count: paginatedResult.count,
 				rows: paginatedResult.rows,
@@ -258,7 +259,7 @@ describe('BooksService', () => {
 
 		it('should throw NotFoundException if no books are found', async () => {
 			const options = { limit: 10, page: 1, search: 'nonexistent' };
-			vi.spyOn(repository, 'paginate').mockResolvedValue({
+			vi.spyOn(repository, 'paginateBooks').mockResolvedValue({
 				count: 0,
 				rows: [],
 				totalRecords: 0,

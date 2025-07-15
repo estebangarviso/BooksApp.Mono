@@ -9,6 +9,7 @@ import {
 	Post,
 	Query,
 	Res,
+	UseInterceptors,
 } from '@nestjs/common';
 import { Book, PaginateResult } from '#db';
 import {
@@ -24,6 +25,7 @@ import { CreateBookDto } from '../dtos/create-book.dto';
 import { type CreatedBookDto } from '../dtos/created-book.dto.ts';
 import { PaginateBooksDto } from '../dtos/paginate-books.dto';
 import { UpdateBookDto } from '../dtos/update-book.dto';
+import { PaginateBooksInterceptor } from '../interceptors/paginate-books.interceptor';
 import { BooksService } from '../services/books.service';
 import { BooksControllerDocs } from './books.controller.docs';
 
@@ -41,6 +43,7 @@ export class BooksController {
 
 	@Get()
 	@RequiredPermissions(AppPermission.BOOKS_READ)
+	@UseInterceptors(PaginateBooksInterceptor)
 	search(
 		@Query() paginateBooksDto: PaginateBooksDto,
 	): Promise<PaginateResult<PaginateBooksDto>> {
