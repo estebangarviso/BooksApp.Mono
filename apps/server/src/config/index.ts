@@ -57,6 +57,9 @@ export const env = {
 		REQUEST_TIMEOUT: +REQUEST_TIMEOUT,
 		SWAGGER_ENABLED: SWAGGER_UI === 'true',
 		VERSION: APP_VERSION,
+		DEFAULT_LOCALE: SUPPORTED_LANGS
+			? (SUPPORTED_LANGS.split(',')[0] as ajvI18nLanguages)
+			: ('es' as ajvI18nLanguages),
 		SECURITY: {
 			API_KEY: SECURITY_API_KEY,
 			ENABLED: SECURITY_ENABLED === 'true' && !!API_PREFIX,
