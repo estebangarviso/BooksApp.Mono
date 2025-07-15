@@ -19,6 +19,7 @@ import type { Server } from 'node:http';
 import path from 'node:path';
 import { Sequelize } from 'sequelize-typescript';
 import { HttpExceptionFilter } from '../libs/filters/http-exception.filter.ts';
+import { TimeoutInterceptor } from '../libs/interceptors/timeout.interceptor.ts';
 import { AppModule } from './app.module.ts';
 import {
 	ApiKeyGuard,
@@ -109,6 +110,7 @@ export const start = async ({ port = 0, prefix, swagger }: AppStartConfig) => {
 		}),
 	);
 	app.useGlobalFilters(new HttpExceptionFilter());
+	app.useGlobalInterceptors(new TimeoutInterceptor());
 
 	if (swagger) addSwagger(app, prefix);
 
