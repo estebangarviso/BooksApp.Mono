@@ -7,6 +7,7 @@ import {
 	type ArrayOptions,
 	type ObjectOptions,
 	type Static,
+	type StaticDecode,
 	type TAny,
 	type TArray,
 	type TProperties,
@@ -48,11 +49,8 @@ function getRefObj(name: string): ReferenceObject {
 function schemaInputParser<T extends TSchema>(
 	schema: T,
 	input: unknown,
-): Static<T> {
-	if (typeof schema.parse === 'function') {
-		return schema.parse(input);
-	}
-	return Value.Parse(schema, input);
+): StaticDecode<T> {
+	return Value.Parse<T, StaticDecode<T>>(schema, input);
 }
 
 /**
@@ -101,7 +99,7 @@ export const AjvDto = <P extends TProperties = TProperties>(
 			return getRefObj(this.name);
 		}
 
-		static parseSchema(input: unknown): Static<typeof this.schema> {
+		static parseSchema(input: unknown): StaticDecode<typeof this.schema> {
 			return schemaInputParser(this.schema, input);
 		}
 
@@ -180,7 +178,7 @@ export const AjvIterableDto = <
 			return getRefObj(this.name);
 		}
 
-		static parseSchema(input: unknown): Static<S> {
+		static parseSchema(input: unknown): StaticDecode<typeof this.schema> {
 			return schemaInputParser(schema, input);
 		}
 
@@ -199,7 +197,7 @@ export const AjvIterableDto = <
 		constructor(items: I | unknown[] = []) {
 			super();
 			if (items) {
-				this.push(...schemaInputParser(schema, items));
+				this.push(...(schemaInputParser(schema, items) as unknown[]));
 			}
 		}
 	};
@@ -232,7 +230,7 @@ export interface AjvDto<S extends TSchema = TSchema> {
 	 * @returns Parsed input as per the schema
 	 * @throws {AssertError} If the schema does not have a parse method
 	 */
-	readonly parseSchema: (input: unknown) => Static<S>;
+	readonly parseSchema: (input: unknown) => StaticDecode<S>;
 	/**
 	 * Registers the DTO schema to OpenApi Swagger document.
 	 */
