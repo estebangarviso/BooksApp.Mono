@@ -1,2 +1,6 @@
-export { AjvDto, registerDtoOpenApiSchemas } from './ajv.dto.ts';
+export {
+	AjvDto,
+	AjvIterableDto,
+	registerDtoOpenApiSchemas,
+} from './ajv.dto.ts';
 export { AjvValidationPipe } from './ajv.pipe.ts';

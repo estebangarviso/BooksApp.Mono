@@ -5,7 +5,7 @@ import { ALLOW_UNAUTHORIZED } from '#libs/decorators';
 import { JwtStrategyTypes } from '../../app/modules/auth/auth.constant';
 
 /**
- * Authentication-based access guard.
+ * Attribute-based access guard.
  * @description
  * This guard uses the JWT strategy to authenticate requests based on access tokens.
  * It is used to protect routes that require authentication.
@@ -13,11 +13,11 @@ import { JwtStrategyTypes } from '../../app/modules/auth/auth.constant';
  *
  * ```ts
  * import { Controller, Get, UseGuards } from '@nestjs/common';
- * import { AuthenticationBasedAccessGuard } from './guards/abac.guard';
+ * import { AttributeBasedAccessGuard } from './guards/abac.guard';
  *
  * \@Controller('protected')
  * export class ProtectedController {
- *   \@UseGuards(AuthenticationBasedAccessGuard)
+ *   \@UseGuards(AttributeBasedAccessGuard)
  *   \@Get()
  *   getProtectedResource() {
  *     return 'This is a protected resource';
@@ -31,7 +31,7 @@ import { JwtStrategyTypes } from '../../app/modules/auth/auth.constant';
  * ```
  */
 @Injectable()
-export class AuthenticationBasedAccessGuard extends AuthGuard(
+export class AttributeBasedAccessGuard extends AuthGuard(
 	JwtStrategyTypes.ACCESS,
 ) {
 	/**

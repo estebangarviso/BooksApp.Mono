@@ -1,9 +1,6 @@
 import { UseGuards } from '@nestjs/common';
 import { SetMetadata } from '@nestjs/common';
-import {
-	AuthenticationBasedAccessGuard,
-	RoleBasedAccessGuard,
-} from '../guards';
+import { AttributeBasedAccessGuard, RoleBasedAccessGuard } from '../guards';
 
 /**
  * Symbol to mark a route as requiring specific roles.
@@ -31,10 +28,21 @@ export const REQUIRED_PERMISSIONS = Symbol('required-permissions');
  * getReports() {
  *   return 'History of reports';
  * }
+ * // or
+ * \@RequirePermission(['view_reports', 'edit_reports'])
+ * \@Get('reports')
+ * getReports() {
+ *   return 'History of reports';
+ * }
  * ```
  */
-export const RequiredPermissions = (permissions: string[]): MethodDecorator =>
-	SetMetadata(REQUIRED_PERMISSIONS, permissions);
+export const RequiredPermissions = (
+	permissions: string[] | string,
+): MethodDecorator =>
+	SetMetadata(
+		REQUIRED_PERMISSIONS,
+		Array.isArray(permissions) ? permissions : [permissions],
+	);
 
 /**
  * Decorator to mark a route as requiring specific roles.
@@ -45,6 +53,12 @@ export const RequiredPermissions = (permissions: string[]): MethodDecorator =>
  * @returns {MethodDecorator} A method decorator that sets the REQUIRED_ROLES metadata.
  * @example
  * ```ts
+ * \@RequireRoles('admin')
+ * \@Get('admin-dashboard')
+ * getAdminDashboard() {
+ *   return 'This is the admin dashboard';
+ * }
+ * // or
  * \@RequireRoles(['admin', 'editor'])
  * \@Get('admin-dashboard')
  * getAdminDashboard() {
@@ -52,11 +66,11 @@ export const RequiredPermissions = (permissions: string[]): MethodDecorator =>
  * }
  * ```
  */
-export const RequiredRoles = (roles: string[]): MethodDecorator =>
-	SetMetadata(REQUIRED_ROLES, roles);
+export const RequiredRoles = (roles: string[] | string): MethodDecorator =>
+	SetMetadata(REQUIRED_ROLES, Array.isArray(roles) ? roles : [roles]);
 
 /**
- * AuthGuards is a composite guard that combines the AuthenticationBasedAccessGuard and RoleBasedAccessGuard.
+ * AuthGuards is a composite guard that combines the AttributeBasedAccessGuard and RoleBasedAccessGuard.
  * It is used to protect routes that require both authentication and role-based access control.
  *
  * @example
@@ -73,4 +87,4 @@ export const RequiredRoles = (roles: string[]): MethodDecorator =>
  * ```
  */
 export const AuthGuards: () => ClassDecorator = () =>
-	UseGuards(AuthenticationBasedAccessGuard, RoleBasedAccessGuard);
+	UseGuards(AttributeBasedAccessGuard, RoleBasedAccessGuard);

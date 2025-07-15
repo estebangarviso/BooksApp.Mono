@@ -43,7 +43,7 @@ function getRefObj(name: string): ReferenceObject {
  * @param schema - TypeBox schema to parse the input
  * @param input - Input to be parsed
  * @returns Parsed input as per the schema
- * @throws {AssertError} If the schema does not have a parse method
+ * @throws {ParseError} If the schema does not have a parse method
  */
 function schemaInputParser<T extends TSchema>(
 	schema: T,

@@ -3,7 +3,4 @@ export * from './apply.decorator.ts';
 export * from './auth.decorator.ts';
 export * from './get-current-user-id.decorator.ts';
 export * from './get-current-user.decorator.ts';
-export {
-	createSecurityGuard,
-	type SecurityGuard,
-} from './security-guard.factory.ts';
+export * from './security-guard.factory.ts';

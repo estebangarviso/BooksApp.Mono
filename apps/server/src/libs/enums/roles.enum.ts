@@ -1,5 +1,5 @@
 export enum AppRole {
-	SUPER_ADMIN = 'ADMIN',
+	ADMIN = 'ADMIN',
 	EDITOR = 'EDITOR',
 	GUEST = 'GUEST',
 	PUBLISHER = 'PUBLISHER',

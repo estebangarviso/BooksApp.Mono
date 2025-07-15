@@ -55,10 +55,11 @@ export class AjvValidationPipe implements PipeTransform {
 
 		// localize errors for user-friendly messages
 		// Get the 'accept-language' header from the request
-		const lang: any = this.request.headers['accept-language']
-			?.split(',')[0]
-			.trim()
-			.toLowerCase();
+		const lang: any =
+			this.request?.headers['accept-language']
+				?.split(',')[0]
+				.trim()
+				.toLowerCase() || env.APP.DEFAULT_LOCALE;
 		// check if the language is supported, default to 'en' if not
 		const locale: ajvI18nLanguages =
 			lang && env.APP.SUPPORTED_LANGS.includes(lang) ? lang : 'en';
