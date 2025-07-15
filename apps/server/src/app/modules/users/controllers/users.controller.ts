@@ -5,6 +5,7 @@ import {
 	RequiredRoles,
 } from '#libs/decorators';
 import { AppPermission, AppRole } from '#libs/enums';
+import { CreateUserResponseDto } from '../dtos/create-user-response.dto';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UsersService } from '../services/users.service';
 
@@ -13,10 +14,14 @@ import { UsersService } from '../services/users.service';
 export class UsersController {
 	constructor(private readonly _userService: UsersService) {}
 
-	@RequiredRoles([AppRole.SUPER_ADMIN])
-	@RequiredPermissions([AppPermission.USERS_CREATE])
+	@RequiredRoles([AppRole.ADMIN])
+	@RequiredPermissions(AppPermission.USERS_CREATE)
 	@Post('create')
-	createUser(@Body() createUserDto: CreateUserDto) {
-		return this._userService.create(createUserDto);
+	createUser(
+		@Body() createUserDto: CreateUserDto,
+	): Promise<CreateUserResponseDto> {
+		return this._userService.createUserWithDetails(
+			createUserDto as typeof CreateUserDto.schema.static,
+		);
 	}
 }

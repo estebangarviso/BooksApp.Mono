@@ -117,7 +117,7 @@ export const start = async ({ port = 0, prefix, swagger }: AppStartConfig) => {
 	const dispose = async () => {
 		const server = app.getHttpServer() as Server;
 		server.closeAllConnections();
-		await app.close();
+		await Promise.all([sequelize.close(), app.close()]);
 	};
 
 	return { adapter, app, dispose };

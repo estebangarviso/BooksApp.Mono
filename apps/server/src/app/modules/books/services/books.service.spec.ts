@@ -1,7 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { type Book } from '#db';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Book } from '#db';
+import { PassThrough } from 'node:stream';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CreateBookDto } from '../dtos/create-book.dto';
 import {
 	BOOKS_REPOSITORY,
@@ -12,16 +13,38 @@ import { BooksService } from './books.service';
 const mockBooksRepository: IBooksRepository = {
 	count: vi.fn(),
 	create: vi.fn(),
+	createWithDetails: vi.fn(),
+	delete: vi.fn(),
 	findAll: vi.fn(),
+	findAllForExport: vi.fn(),
+	findAndCountAll: vi.fn(),
+	findByIsbn: vi.fn(),
+	findByTitle: vi.fn(),
 	findOne: vi.fn(),
 	paginate: vi.fn(),
-	softDelete: vi.fn(),
 	update: vi.fn(),
 };
 
 describe('BooksService', () => {
 	let service: BooksService;
 	let repository: IBooksRepository;
+
+	const asyncGeneratorDataStreamBookToCsvWithData: AsyncGenerator<Book> =
+		(async function* () {
+			yield {
+				id: '1',
+				author: { name: 'Test Author' },
+				availability: true,
+				genres: [{ name: 'Fiction' }, { name: 'Adventure' }],
+				isbn: '1234567890',
+				price: 19.99,
+				publisher: { name: 'Test Publisher' },
+				title: 'Test Book',
+			} as Book;
+		})();
+
+	const booksStreamGenerator: AsyncGenerator<Book> =
+		(async function* () {})();
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
@@ -39,29 +62,61 @@ describe('BooksService', () => {
 		repository = module.get<IBooksRepository>(BOOKS_REPOSITORY);
 	});
 
+	afterEach(() => {
+		vi.clearAllMocks();
+	});
+
 	it('should be defined', () => {
 		expect(service).toBeDefined();
 	});
 
 	describe('create', () => {
-		it('should call repository.create with correct data', async () => {
+		it('should call repository.createWithDetails with correct data', async () => {
 			const createBookDto: typeof CreateBookDto.schema.static = {
-				author: 'Author Name',
+				authorName: 'Author Name',
+				availability: true,
 				genres: ['Fiction', 'Adventure'],
+				imageUrl: 'http://example.com/image.jpg',
 				isbn: '123',
 				price: 9.99,
-				publisher: 'Publisher Name',
+				publisherName: 'Publisher Name',
 				title: 'New Book',
 			};
 			const expectedBook = { id: '1', ...createBookDto };
-			vi.spyOn(repository, 'create').mockResolvedValue(
+			vi.spyOn(repository, 'findByTitle').mockResolvedValue(null);
+			vi.spyOn(repository, 'findByIsbn').mockResolvedValue(null);
+			vi.spyOn(repository, 'createWithDetails').mockResolvedValue(
 				expectedBook as any,
 			);
 
 			const result = await service.create(createBookDto);
 
-			expect(repository.create).toHaveBeenCalledWith(createBookDto);
+			expect(repository.createWithDetails).toHaveBeenCalledWith(
+				createBookDto,
+			);
 			expect(result).toStrictEqual(expectedBook);
+		});
+
+		it('should throw BadRequestException if book with same title exists', async () => {
+			const createBookDto = { title: 'Existing Book' };
+			vi.spyOn(repository, 'findByTitle').mockResolvedValue({
+				id: '2',
+			} as any);
+
+			await expect(service.create(createBookDto as any)).rejects.toThrow(
+				BadRequestException,
+			);
+		});
+
+		it('should throw BadRequestException if book with same ISBN exists', async () => {
+			const createBookDto = { isbn: '12345' };
+			vi.spyOn(repository, 'findByIsbn').mockResolvedValue({
+				id: '2',
+			} as any);
+
+			await expect(service.create(createBookDto as any)).rejects.toThrow(
+				BadRequestException,
+			);
 		});
 	});
 
@@ -97,6 +152,7 @@ describe('BooksService', () => {
 			const bookId = '1';
 			const updateDto = { title: 'Updated Book' };
 			const updatedBook = { id: bookId, ...updateDto };
+			vi.spyOn(repository, 'findByTitle').mockResolvedValue(null);
 			vi.spyOn(repository, 'update').mockResolvedValue(
 				updatedBook as any,
 			);
@@ -107,9 +163,50 @@ describe('BooksService', () => {
 			expect(result).toStrictEqual(updatedBook);
 		});
 
+		it('should not throw BadRequestException if updating book with its own title', async () => {
+			const bookId = '1';
+			const updateDto = { title: 'Existing Title' };
+			vi.spyOn(repository, 'findByTitle').mockResolvedValue({
+				id: bookId,
+			} as any); // same ID
+			vi.spyOn(repository, 'update').mockResolvedValue({
+				id: bookId,
+				...updateDto,
+			} as any);
+
+			await expect(
+				service.update(bookId, updateDto),
+			).resolves.toBeDefined();
+		});
+
+		it('should throw BadRequestException if another book has the same title', async () => {
+			const bookId = '1';
+			const updateDto = { title: 'Existing Title' };
+			vi.spyOn(repository, 'findByTitle').mockResolvedValue({
+				id: '2',
+			} as any);
+
+			await expect(service.update(bookId, updateDto)).rejects.toThrow(
+				BadRequestException,
+			);
+		});
+
+		it('should throw BadRequestException if another book has the same ISBN', async () => {
+			const bookId = '1';
+			const updateDto = { isbn: '12345' };
+			vi.spyOn(repository, 'findByIsbn').mockResolvedValue({
+				id: '2',
+			} as any);
+
+			await expect(service.update(bookId, updateDto)).rejects.toThrow(
+				BadRequestException,
+			);
+		});
+
 		it('should throw NotFoundException if book to update not found', async () => {
 			const bookId = '1';
 			const updateDto = { title: 'Updated Book' };
+			vi.spyOn(repository, 'findByTitle').mockResolvedValue(null);
 			vi.spyOn(repository, 'update').mockResolvedValue(null);
 
 			await expect(service.update(bookId, updateDto)).rejects.toThrow(
@@ -122,13 +219,13 @@ describe('BooksService', () => {
 	});
 
 	describe('remove', () => {
-		it('should call repository.softDelete with correct id', async () => {
+		it('should call repository.delete with correct id', async () => {
 			const bookId = '1';
-			vi.spyOn(repository, 'softDelete').mockResolvedValue();
+			vi.spyOn(repository, 'delete').mockResolvedValue();
 
 			await service.remove(bookId);
 
-			expect(repository.softDelete).toHaveBeenCalledWith(bookId);
+			expect(repository.delete).toHaveBeenCalledWith(bookId);
 		});
 	});
 
@@ -152,12 +249,20 @@ describe('BooksService', () => {
 			});
 		});
 
+		it('should throw BadRequestException if search term is empty', async () => {
+			const options = { limit: 10, page: 1, search: ' ' };
+			await expect(service.search(options)).rejects.toThrow(
+				BadRequestException,
+			);
+		});
+
 		it('should throw NotFoundException if no books are found', async () => {
-			const options = { limit: 10, page: 1 };
+			const options = { limit: 10, page: 1, search: 'nonexistent' };
 			vi.spyOn(repository, 'paginate').mockResolvedValue({
 				count: 0,
 				rows: [],
-			});
+				totalRecords: 0,
+			} as any);
 
 			await expect(service.search(options)).rejects.toThrow(
 				NotFoundException,
@@ -168,108 +273,160 @@ describe('BooksService', () => {
 		});
 	});
 
-	describe('exportToCsv', () => {
-		const mockBook = {
-			id: '1',
-			author: { name: 'Test Author' },
-			availability: true,
-			genres: [{ name: 'Fiction' }, { name: 'Adventure' }],
-			isbn: '1234567890',
-			price: 19.99,
-			publisher: { name: 'Test Publisher' },
-			title: 'Test Book',
-			toFixed: vi.fn(),
-		} as unknown as Book;
-
-		it('should export books to CSV', async () => {
-			vi.spyOn(repository, 'count').mockResolvedValue(1);
-			vi.spyOn(repository, 'paginate').mockResolvedValue({
-				count: 1,
-				rows: [mockBook],
-			});
-
-			const generator = service.exportToCsv();
-			const headers = await generator.next();
-			const row1 = await generator.next();
-			const done = await generator.next();
-
-			expect(headers.value).toContain(
-				'ID,ISBN,Title,Author,Publisher,Genres,Price,Availability',
+	describe('findAllForExport', () => {
+		it('should call repository.findAllForExport', () => {
+			vi.spyOn(repository, 'findAllForExport').mockReturnValue(
+				asyncGeneratorDataStreamBookToCsvWithData,
 			);
-			expect(row1.value).toContain(
-				'1,1234567890,Test Book,Test Author,Test Publisher,"Fiction; Adventure",19.99,Available',
+			const includeDeleted = true;
+			const generator = service.findAllForExport(includeDeleted);
+			expect(repository.findAllForExport).toHaveBeenCalledWith(
+				includeDeleted,
 			);
-			expect(done.done).toBe(true);
+			expect(generator).toBeDefined();
 		});
 
-		it('should handle pagination when exporting to CSV', async () => {
-			const booksPage1 = Array.from({ length: 100 }).fill(mockBook);
-			const booksPage2 = Array.from({ length: 50 }).fill(mockBook);
-			vi.spyOn(repository, 'count').mockResolvedValue(150);
-			vi.spyOn(repository, 'paginate')
-				.mockResolvedValueOnce({ count: 150, rows: booksPage1 as any })
-				.mockResolvedValueOnce({ count: 150, rows: booksPage2 as any });
-
-			const generator = service.exportToCsv();
-			const results = [];
-			for await (const value of generator) {
-				results.push(value);
-			}
-
-			expect(results).toHaveLength(151); // 1 header + 150 rows
-			expect(repository.paginate).toHaveBeenCalledTimes(2);
-		});
-
-		it('should throw NotFoundException if no books to export', async () => {
+		it('should get an empty generator if no books to export', async () => {
+			vi.spyOn(repository, 'findAllForExport').mockReturnValue(
+				booksStreamGenerator,
+			);
 			vi.spyOn(repository, 'count').mockResolvedValue(0);
 
-			const generator = service.exportToCsv();
-			await expect(generator.next()).rejects.toThrow(NotFoundException);
-			await expect(generator.next()).rejects.toThrow(
-				'No books found to export.',
-			);
+			const generator = service.findAllForExport();
+			const nextValue = await generator.next();
+
+			expect(nextValue.done).toBe(true);
+			expect(nextValue.value).toBeUndefined();
 		});
 	});
 
-	describe('_escapeCsvField', () => {
-		it('should escape fields with commas', () => {
-			const result = (service as any)._escapeCsvField(
-				'field, with comma',
-			);
-			expect(result).toBe('"field, with comma"');
+	describe('getBooksCsvStringifier', () => {
+		it('should return a CSV stringifier', () => {
+			const stringifier = service.getBooksCsvStringifier();
+
+			// check if the stringifier is a writable stream
+			expect(stringifier).toBeDefined();
+			expect(stringifier.writable).toBe(true);
 		});
 
-		it('should escape fields with double quotes', () => {
-			const result = (service as any)._escapeCsvField(
-				'field with "quote"',
+		it('should properly format book data into CSV', async () => {
+			const stringifier = service.getBooksCsvStringifier();
+			const outputStream = new PassThrough();
+
+			// sample book data
+			const bookData = {
+				id: '1234',
+				author: { name: 'Test Author' },
+				availability: 'In Stock',
+				genres: [{ name: 'Fiction' }, { name: 'Drama' }],
+				isbn: '9781234567890',
+				price: 19.99,
+				publisher: { name: 'Test Publisher' },
+				title: 'Test Book',
+			};
+
+			// collect output from the stringifier
+			let csvOutput = '';
+			outputStream.on('data', (chunk) => {
+				csvOutput += chunk.toString();
+			});
+
+			// pipe the stringifier to our output stream
+			stringifier.pipe(outputStream);
+
+			// write the data and end the stream
+			stringifier.write(bookData);
+			stringifier.end();
+
+			// wait for the stream to finish
+			await new Promise((resolve) => outputStream.on('end', resolve));
+
+			// check headers are present
+			expect(csvOutput).toContain(
+				'ID,ISBN,Title,Author,Publisher,Genres,Price,Availability',
 			);
-			expect(result).toBe('"field with ""quote"""');
+
+			// check actual data is present
+			expect(csvOutput).toContain('1234');
+			expect(csvOutput).toContain('9781234567890');
+			expect(csvOutput).toContain('Test Book');
+			expect(csvOutput).toContain('Test Author');
+			expect(csvOutput).toContain('Test Publisher');
+			expect(csvOutput).toContain('Fiction; Drama'); // genres should be semicolon-separated
+			expect(csvOutput).toContain('19.99');
+			expect(csvOutput).toContain('In Stock');
 		});
 
-		it('should not escape fields without special characters', () => {
-			const result = (service as any)._escapeCsvField('simple field');
-			expect(result).toBe('simple field');
+		it('should properly handle empty arrays', async () => {
+			const stringifier = service.getBooksCsvStringifier();
+			const outputStream = new PassThrough();
+
+			const bookData = {
+				id: '5678',
+				author: { name: 'Another Author' },
+				availability: 'Out of Stock',
+				genres: [], // empty array
+				isbn: '9780987654321',
+				price: 29.99,
+				publisher: { name: 'Another Publisher' },
+				title: 'Another Book',
+			};
+
+			let csvOutput = '';
+			outputStream.on('data', (chunk) => {
+				csvOutput += chunk.toString();
+			});
+
+			stringifier.pipe(outputStream);
+			stringifier.write(bookData);
+			stringifier.end();
+
+			await new Promise((resolve) => outputStream.on('end', resolve));
+
+			// empty genres array should be formatted as an empty string or properly handled
+			expect(csvOutput).toContain('5678');
+			expect(csvOutput).toContain('Another Book');
+			expect(csvOutput).not.toContain('undefined');
 		});
-	});
 
-	describe('_transformBookToCsvRow', () => {
-		it('should transform a book to a CSV row', () => {
-			const book = {
-				id: '1',
-				author: { name: 'Author Name' },
-				availability: true,
-				genres: [{ name: 'Genre1' }, { name: 'Genre2' }],
-				isbn: '123-456',
-				price: 9.99,
-				publisher: { name: 'Publisher Name' },
-				title: 'A Book Title',
-				toFixed: vi.fn(),
-			} as unknown as Book;
+		it('should properly handle complex objects', async () => {
+			const stringifier = service.getBooksCsvStringifier();
+			const outputStream = new PassThrough();
 
-			const result = (service as any)._transformBookToCsvRow(book);
-			expect(result).toBe(
-				'1,123-456,A Book Title,Author Name,Publisher Name,"Genre1; Genre2",9.99,Available\n',
-			);
+			const bookData = {
+				id: '9012',
+				additionalInfo: { pages: 400, year: 2023 },
+				availability: 'Pre-order',
+				genres: [{ description: 'Scientific topics', name: 'Science' }],
+				isbn: '9781122334455',
+				price: 39.99,
+				title: 'Complex Book',
+				author: {
+					bio: 'Author bio text',
+					name: 'Complex Author',
+				},
+				publisher: {
+					location: 'New York',
+					name: 'Complex Publisher',
+				},
+			};
+
+			let csvOutput = '';
+			outputStream.on('data', (chunk) => {
+				csvOutput += chunk.toString();
+			});
+
+			stringifier.pipe(outputStream);
+			stringifier.write(bookData);
+			stringifier.end();
+
+			await new Promise((resolve) => outputStream.on('end', resolve));
+
+			// check that complex nested objects are properly stringified
+			expect(csvOutput).toContain('Complex Author');
+			expect(csvOutput).toContain('Complex Publisher');
+			expect(csvOutput).toContain('Science');
+			expect(csvOutput).toContain('39.99');
 		});
 	});
 });

@@ -1,17 +1,28 @@
-import { Book, IBaseRepository } from '#db';
-import { FindOptions } from 'sequelize';
-import { CreateBookDto } from '../dtos/create-book.dto';
+import { type Book, type BookAttributes, type IBaseRepository } from '#db';
+import {
+	type Attributes,
+	type CreateOptions,
+	type FindOptions,
+} from 'sequelize';
+import { type CreateBookDto } from '../dtos/create-book.dto';
+import type { CreatedBookDto } from '../dtos/created-book.dto.ts';
 
 export const BOOKS_REPOSITORY = 'BooksRepository';
 
 // NOTE: IBooksRepository now inherits all the standard methods.
 // We can add book-specific methods here if needed in the future.
 export interface IBooksRepository extends IBaseRepository<Book> {
-	// example of a custom method:
-	// findByAuthor(authorId: string): Promise<Book[]>;
-	create(createBookDto: typeof CreateBookDto.schema.static): Promise<Book>;
-	paginate(options?: FindOptions<Book> | undefined): Promise<{
-		count: number;
-		rows: Book[];
-	}>;
+	findAllForExport(includeDeleted?: boolean): AsyncGenerator<Book>;
+	createWithDetails(
+		createBookDto: CreateBookDto,
+		options?: CreateOptions<Attributes<Book>>,
+	): Promise<typeof CreatedBookDto.schema.static>;
+	findByIsbn(
+		isbn: string,
+		options?: Omit<FindOptions<BookAttributes>, 'where'>,
+	): Promise<Book | null>;
+	findByTitle(
+		title: string,
+		options?: Omit<FindOptions<BookAttributes>, 'where'>,
+	): Promise<Book | null>;
 }

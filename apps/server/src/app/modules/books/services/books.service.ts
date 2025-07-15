@@ -4,10 +4,13 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
-import { Book } from '#db';
+import { Book, type PaginateResult } from '#db';
+import { stringify } from 'csv-stringify';
 import { Op } from 'sequelize';
 import { CreateBookDto } from '../dtos/create-book.dto';
+import type { CreatedBookDto } from '../dtos/created-book.dto.ts';
 import { PaginateBooksDto } from '../dtos/paginate-books.dto';
+import { PaginatedBookDto } from '../dtos/paginated-book.dto';
 import { UpdateBookDto } from '../dtos/update-book.dto';
 import {
 	BOOKS_REPOSITORY,
@@ -28,16 +31,33 @@ export class BooksService {
 	 * @param createBookDto - The DTO containing book details.
 	 * @returns The created book instance.
 	 */
-	create(createBookDto: typeof CreateBookDto.schema.static) {
+	async create(createBookDto: CreateBookDto): Promise<CreatedBookDto> {
+		const { isbn, title } =
+			createBookDto as typeof CreateBookDto.schema.static;
+		if (title) {
+			const existingBook = await this.booksRepository.findByTitle(title);
+			if (existingBook) {
+				throw new BadRequestException(
+					`Book with title "${title}" already exists`,
+				);
+			}
+		} else if (isbn) {
+			const existingBook = await this.booksRepository.findByIsbn(isbn);
+			if (existingBook) {
+				throw new BadRequestException(
+					`Book with ISBN ${isbn} already exists`,
+				);
+			}
+		}
 		// the repository now handles the complex creation logic.
-		return this.booksRepository.create(createBookDto);
+		return this.booksRepository.createWithDetails(createBookDto);
 	}
 
 	/**
 	 * Find a book by its ID.
 	 * @param id - The ID of the book to find.
 	 * @returns The book instance if found.
-	 * @throws NotFoundException if the book with the given ID does not exist.
+	 * @throws {NotFoundException} if the book with the given ID does not exist.
 	 */
 	async findOne(id: string) {
 		const book = await this.booksRepository.findOne(id);
@@ -53,10 +73,27 @@ export class BooksService {
 	 * @param bookId - The ID of the book to update.
 	 * @param updateBookDto - The DTO containing the updated book details.
 	 * @returns The updated book instance.
-	 * @throws NotFoundException if the book with the given ID does not exist.
+	 * @throws {NotFoundException} if the book with the given ID does not exist.
 	 */
 	async update(bookId: string, updateBookDto: UpdateBookDto) {
-		// TODO: The repository's update method needs to be enhanced to handle relations.
+		const { isbn, title } =
+			updateBookDto as typeof UpdateBookDto.schema.static;
+		if (title) {
+			const existingBook = await this.booksRepository.findByTitle(title);
+			if (existingBook && existingBook.id !== bookId) {
+				throw new BadRequestException(
+					`Book with title "${title}" already exists`,
+				);
+			}
+		} else if (isbn) {
+			const existingBook = await this.booksRepository.findByIsbn(isbn);
+			if (existingBook && existingBook.id !== bookId) {
+				throw new BadRequestException(
+					`Book with ISBN ${isbn} already exists`,
+				);
+			}
+		}
+		// the repository now handles the complex update logic.
 		const book = await this.booksRepository.update(bookId, updateBookDto);
 		if (!book) {
 			throw new NotFoundException(`Book with ID "${bookId}" not found`);
@@ -69,10 +106,10 @@ export class BooksService {
 	 * This method marks the book as deleted without removing it from the database.
 	 * @param bookId - The ID of the book to soft delete.
 	 * @returns A promise that resolves when the book is soft deleted.
-	 * @throws NotFoundException if the book with the given ID does not exist.
+	 * @throws {NotFoundException} if the book with the given ID does not exist.
 	 */
 	remove(bookId: string) {
-		return this.booksRepository.softDelete(bookId);
+		return this.booksRepository.delete(bookId);
 	}
 
 	/**
@@ -94,15 +131,15 @@ export class BooksService {
 	 * console.log(result.rows); // Array of Book instances
 	 * ```
 	 *
-	 * @throws NotFoundException if no books are found.
+	 * @throws {NotFoundException} if no books are found.
 	 */
 	async search(
 		options?: typeof PaginateBooksDto.schema.static,
-	): Promise<{ count: number; rows: Book[] }> {
+	): Promise<PaginateResult<typeof PaginatedBookDto.schema.static>> {
 		const {
 			includeDeleted = false,
 			limit = 10,
-			page = 1,
+			page: currentPage = 1,
 			search = '',
 			sortBy = 'title',
 			sortOrder = 'asc',
@@ -132,146 +169,78 @@ export class BooksService {
 				},
 			);
 		}
-		const result = await this.booksRepository.paginate({
+		const result = await this.booksRepository.paginate<
+			typeof PaginatedBookDto.schema.static
+		>(currentPage, limit, {
 			paranoid: !includeDeleted,
 			include: ['author', 'publisher', 'genres'],
-			limit,
-			offset: (page - 1) * limit,
 			order: [[sortBy, sortOrder.toUpperCase()]],
+			attributes: [
+				'id',
+				'isbn',
+				'title',
+				['$author.name$', 'authorName'],
+				['$publisher.name$', 'publisherName'],
+				'price',
+				'availability',
+				'imageUrl',
+				['$genres.name$', 'genres'],
+			],
 			where: {
 				[Op.or]: orArray,
 			},
 		});
 
-		if (result.count === 0) {
+		if (result.totalRecords === 0) {
 			throw new NotFoundException(
 				'No books found matching the criteria.',
 			);
 		}
 
-		return {
-			count: result.count,
-			rows: result.rows,
-		};
+		return result;
 	}
 
 	/**
-	 * Exports books to a CSV format.
+	 * Streams books for CSV export.
 	 * This method generates a CSV stream of books, including their details and relations.
 	 * @param includeDeleted - If true, includes soft-deleted books in the export.
 	 * @returns An async generator that yields CSV rows.
 	 * @throws {NotFoundException} if no books are found to export.
 	 */
-	async *exportToCsv(
-		includeDeleted: boolean = false,
-	): AsyncGenerator<string> {
-		// count the total number of books, including deleted ones if specified
-		const total = await this.booksRepository.count({
-			paranoid: !includeDeleted,
-		});
-		if (total === 0) {
-			throw new NotFoundException('No books found to export.');
-		}
-		const headers = [
-			'ID',
-			'ISBN',
-			'Title',
-			'Author',
-			'Publisher',
-			'Genres',
-			'Price',
-			'Availability',
-		].join(',');
-
-		yield `${headers}\n`;
-
-		// limit the number of books to 100 per iteration
-		let offset = 0;
-		const limit = 100;
-
-		if (total > limit) {
-			// while there are still books to process
-			while (offset < total) {
-				// paginate through the books
-				const books = await this.booksRepository.paginate({
-					paranoid: !includeDeleted,
-					include: ['author', 'publisher', 'genres'],
-					limit,
-					offset,
-				});
-
-				// iterate through the books and format them as CSV rows
-				for (const book of books.rows) {
-					yield this._transformBookToCsvRow(book);
-				}
-				offset += limit;
-			}
-
-			// if we reach here, we have processed all books
-			return;
-		}
-
-		const books = await this.booksRepository.paginate({
-			paranoid: !includeDeleted,
-			include: ['author', 'publisher', 'genres'],
-			limit,
-			offset: 0,
-		});
-
-		for (const book of books.rows) {
-			yield this._transformBookToCsvRow(book);
-		}
+	findAllForExport(includeDeleted: boolean = false): AsyncGenerator<Book> {
+		return this.booksRepository.findAllForExport(includeDeleted);
 	}
 
 	/**
-	 * Escapes a field for CSV format. If the field contains a comma,
-	 * double-quote, or newline, it will be enclosed in double-quotes.
-	 * Existing double-quotes are escaped by doubling them.
-	 *
-	 * @param field - The field to escape.
-	 * @example
-	 * ```typescript
-	 * const escapedField = this._escapeCsvField('Hello, "World"');
-	 * console.log(escapedField); // Outputs: "Hello, ""World"""
-	 * ```
-	 * @private
-	 * @description This method is used internally to ensure that CSV fields are properly formatted
-	 * to avoid issues with CSV parsers when fields contain special characters.
-	 * It is not intended to be used outside of this service.
-	 * @throws {TypeError} if the field is not a string or cannot be converted to a string.
-	 * @returns {string} The escaped field ready for CSV output.
-	 * @see https://tools.ietf.org/html/rfc4180#section-2 for CSV format specifications.
-	 * @see https://stackoverflow.com/questions/1293147/how-to-escape-double-quotes-in-csv for escaping double quotes in CSV.
+	 * Returns a CSV stringifier for books.
+	 * This method provides a stringifier configured for book data, including relations.
+	 * @returns A CSV stringifier instance.
 	 */
-	private _escapeCsvField(field: any): string {
-		const str = String(field ?? '');
-		if (/[\n",]/u.test(str)) {
-			return `"${str.replaceAll('"', '""')}"`;
-		}
-		return str;
-	}
+	getBooksCsvStringifier() {
+		// define the CSV columns and their headers.
+		const columns = [
+			{ header: 'ID', key: 'id' },
+			{ header: 'ISBN', key: 'isbn' },
+			{ header: 'Title', key: 'title' },
+			{ header: 'Author', key: 'author.name' },
+			{ header: 'Publisher', key: 'publisher.name' },
+			{ header: 'Genres', key: 'genres' },
+			{ header: 'Price', key: 'price' },
+			{ header: 'Availability', key: 'availability' },
+		];
 
-	/**
-	 * Transform a Book instance to a CSV row string.
-	 * This method formats the book's properties into a CSV-compatible string.
-	 * @param book - The Book instance to convert.
-	 * @returns A string representing the book in CSV format.
-	 */
-	private _transformBookToCsvRow(book: Book): string {
-		const genres = book.genres.map((g) => g.name).join('; ');
-		const row = [
-			book.id,
-			book.isbn ?? 'N/A',
-			book.title,
-			book.author?.name ?? 'Unknown',
-			book.publisher?.name ?? 'Unknown',
-			genres,
-			book.price.toFixed(2),
-			book.availability ? 'Available' : 'Unavailable',
-		]
-			.map(this._escapeCsvField)
-			.join(',');
-
-		return `${row}\n`;
+		// create a CSV stringifier with the defined columns.
+		return stringify({
+			columns,
+			header: true,
+			cast: {
+				object: (value) => {
+					if (Array.isArray(value)) {
+						return value.map((v) => v.name).join('; ');
+					}
+					return JSON.stringify(value);
+				},
+			},
+		});
 	}
 }

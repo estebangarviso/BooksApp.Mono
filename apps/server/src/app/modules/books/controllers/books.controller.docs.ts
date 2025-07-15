@@ -35,18 +35,6 @@ export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
 				status: HttpStatusCode.CREATED,
 			}),
 		],
-		exportToCsv: [
-			ApiOperation({ summary: 'Export all books to a CSV file' }),
-			ApiProduces('text/csv'),
-			ApiResponse({
-				description: 'CSV file containing all books',
-				status: HttpStatusCode.OK,
-			}),
-			ApiResponse({
-				description: 'No books found',
-				status: HttpStatusCode.NOT_FOUND,
-			}),
-		],
 		findOne: [
 			ApiOperation({ summary: 'Get a single book by ID' }),
 			ApiResponse({
@@ -78,6 +66,18 @@ export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
 					items: CreateBookDto.refObj,
 					type: 'array',
 				},
+			}),
+			ApiResponse({
+				description: 'No books found',
+				status: HttpStatusCode.NOT_FOUND,
+			}),
+		],
+		findAllForExport: [
+			ApiOperation({ summary: 'Export all books to a CSV file' }),
+			ApiProduces('text/csv'),
+			ApiResponse({
+				description: 'CSV file containing all books',
+				status: HttpStatusCode.OK,
 			}),
 			ApiResponse({
 				description: 'No books found',

@@ -4,11 +4,14 @@ import { Author, Book, Genre, Publisher } from '#db';
 import { Sequelize } from 'sequelize-typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CreateBookDto } from '../dtos/create-book.dto';
+import type { PaginatedBookDto } from '../dtos/paginated-book.dto.ts';
 import { BooksRepository } from './books.repository';
 
 const mockBookModel = {
 	create: vi.fn(),
+	findAll: vi.fn(),
 	findAndCountAll: vi.fn(),
+	save: vi.fn(),
 };
 const mockAuthorModel = {
 	findOrCreate: vi.fn(),
@@ -58,80 +61,136 @@ describe('BooksRepository', () => {
 
 	describe('create', () => {
 		it('should create a book with author, publisher, and genres within a transaction', async () => {
-			const createBookDto: typeof CreateBookDto.schema.static = {
-				author: 'Test Author',
-				availability: true,
-				genres: ['Fiction', 'Sci-Fi'],
-				imageUrl: 'http://example.com/image.jpg',
-				isbn: '1234567890',
-				price: 29.99,
-				publisher: 'Test Publisher',
-				title: 'Test Book',
-			};
-
 			const authorInstance = { id: 1, name: 'Test Author' };
 			const publisherInstance = { id: 1, name: 'Test Publisher' };
 			const genreInstances = [
 				{ id: 1, name: 'Fiction' },
 				{ id: 2, name: 'Sci-Fi' },
 			];
-			const bookInstance = {
+			const mockBookInstance = {
 				id: 'book-1',
-				...createBookDto,
 				$set: vi.fn().mockResolvedValue(null),
+				author: authorInstance,
 				authorId: authorInstance.id,
+				availability: true,
+				genres: genreInstances,
+				imageUrl: 'http://example.com/image.jpg',
+				isbn: '1234567890',
+				price: 29.99,
+				publisher: publisherInstance,
 				publisherId: publisherInstance.id,
-				reload: vi.fn().mockResolvedValue(this),
+				save: vi.fn(),
+				title: 'Test Book',
+			} as unknown as Book;
+			const createBookDto: typeof CreateBookDto.schema.static = {
+				authorName: mockBookInstance.author.name,
+				availability: mockBookInstance.availability,
+				genres: mockBookInstance.genres.map((genre) => genre.name),
+				imageUrl: mockBookInstance.imageUrl,
+				isbn: mockBookInstance.isbn,
+				price: mockBookInstance.price,
+				publisherName: mockBookInstance.publisher.name,
+				title: mockBookInstance.title,
+			};
+			const expectedResult: typeof PaginatedBookDto.schema.static = {
+				id: mockBookInstance.id,
+				authorName: mockBookInstance.author.name,
+				availability: mockBookInstance.availability,
+				genres: mockBookInstance.genres.map((genre) => genre.name),
+				imageUrl: mockBookInstance.imageUrl,
+				isbn: mockBookInstance.isbn,
+				price: mockBookInstance.price,
+				publisherName: mockBookInstance.publisher.name,
+				title: mockBookInstance.title,
 			};
 
 			mockAuthorModel.findOrCreate.mockResolvedValue([authorInstance]);
 			mockPublisherModel.findOrCreate.mockResolvedValue([
 				publisherInstance,
 			]);
-			mockBookModel.create.mockResolvedValue(bookInstance);
+			mockBookModel.create.mockResolvedValue(mockBookInstance);
 			mockGenreModel.findOrCreate
 				.mockResolvedValueOnce([genreInstances[0]])
 				.mockResolvedValueOnce([genreInstances[1]]);
+			vi.spyOn(mockBookInstance, '$set').mockResolvedValueOnce(null);
+			vi.spyOn(mockBookInstance, 'save').mockResolvedValueOnce(
+				mockBookInstance,
+			);
 
-			const result = await repository.create(createBookDto);
+			const result = await repository.createWithDetails(createBookDto);
 
 			expect(mockSequelize.transaction).toHaveBeenCalledOnce();
 			expect(mockAuthorModel.findOrCreate).toHaveBeenCalledWith({
 				transaction: mockTransaction,
-				where: { name: createBookDto.author },
+				where: { name: createBookDto.authorName },
 			});
 			expect(mockPublisherModel.findOrCreate).toHaveBeenCalledWith({
 				transaction: mockTransaction,
-				where: { name: createBookDto.publisher },
+				where: { name: createBookDto.publisherName },
 			});
 			expect(mockBookModel.create).toHaveBeenCalled();
 			expect(mockGenreModel.findOrCreate).toHaveBeenCalledTimes(2);
-			expect(bookInstance.$set).toHaveBeenCalledWith(
+			expect(mockBookInstance.$set).toHaveBeenCalledWith(
 				'genres',
 				expect.any(Array),
 				{ transaction: mockTransaction },
 			);
-			expect(bookInstance.reload).toHaveBeenCalledWith({
-				include: [Author, Publisher, Genre],
+			expect(mockBookInstance.save).toHaveBeenCalledWith({
 				transaction: mockTransaction,
 			});
-			expect(result).toBe(bookInstance);
+			expect(result).toStrictEqual(expectedResult);
 		});
 	});
 
-	describe('paginate', () => {
-		it('should call super.paginate which should use model.findAndCountAll', async () => {
-			const options = { limit: 10, offset: 0 };
-			const expectedResult = {
-				count: 1,
-				rows: [{ id: '1', title: 'A Book' }],
-			};
-			mockBookModel.findAndCountAll.mockResolvedValue(expectedResult);
+	describe('findAllForExport', () => {
+		it('should create an async generator for books with author, publisher, and genres', async () => {
+			const includeDeleted = true;
+			const BATCH_SIZE = 100;
+			const offset = 0;
 
-			const result = await repository.paginate(options);
+			const mockBooksPage1 = Array.from(
+				{ length: BATCH_SIZE },
+				(_, i) => ({
+					id: `${i}`,
+					title: `Book ${i}`,
+				}),
+			);
+			const mockBooksPage2 = Array.from({ length: 50 }, (_, i) => ({
+				id: `${i + BATCH_SIZE}`,
+				title: `Book ${i + BATCH_SIZE}`,
+			}));
 
-			expect(mockBookModel.findAndCountAll).toHaveBeenCalledWith(options);
-			expect(result).toStrictEqual(expectedResult);
+			mockBookModel.findAll
+				.mockResolvedValueOnce(mockBooksPage1)
+				.mockResolvedValueOnce(mockBooksPage2)
+				.mockResolvedValueOnce([]); // no more books
+
+			const bookStream = repository.findAllForExport(includeDeleted);
+
+			const yieldedBooks = [];
+			for await (const book of bookStream) {
+				yieldedBooks.push(book);
+			}
+
+			expect(yieldedBooks).toHaveLength(150);
+			expect(yieldedBooks[0]).toStrictEqual(mockBooksPage1[0]);
+			expect(yieldedBooks[149]).toStrictEqual(mockBooksPage2[49]);
+
+			expect(mockBookModel.findAll).toHaveBeenCalledTimes(3);
+			expect(mockBookModel.findAll).toHaveBeenCalledWith({
+				paranoid: !includeDeleted,
+				include: [Author, Publisher, Genre],
+				limit: BATCH_SIZE,
+				offset: 0,
+				order: [['title', 'ASC']],
+			});
+			expect(mockBookModel.findAll).toHaveBeenCalledWith({
+				paranoid: !includeDeleted,
+				include: [Author, Publisher, Genre],
+				limit: BATCH_SIZE,
+				offset: BATCH_SIZE,
+				order: [['title', 'ASC']],
+			});
 		});
 	});
 });

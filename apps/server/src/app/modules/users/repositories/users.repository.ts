@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BaseRepository, Permission, Profile, Role, User } from '#db';
-import { CreationAttributes, Sequelize } from 'sequelize';
-import { CreateUserDto } from '../dtos/create-user.dto';
+import { Sequelize } from 'sequelize';
+import { type CreateUserWithDetailsDto } from '../dtos/create-user-and-profile.dto.ts';
 import { IUsersRepository } from '../interfaces/users.repository.interface';
 
 @Injectable()
@@ -22,11 +22,11 @@ export class UsersRepository
 		super(_userModel);
 	}
 
-	findOneByUsername(email: string): Promise<User | null> {
+	findOneByEmail(email: string): Promise<User | null> {
 		return this._userModel.findOne({ where: { email } });
 	}
 
-	findWithPermissions(id: string): Promise<User | null> {
+	findOneWithPermissions(id: string): Promise<User | null> {
 		return this._userModel.findByPk(id, {
 			include: [
 				{
@@ -36,42 +36,64 @@ export class UsersRepository
 			],
 		});
 	}
+	async findRoleByRoleId(roleId: number): Promise<Role | null> {
+		try {
+			const role = await this._roleModel.findByPk(roleId);
+			if (!role) {
+				return null;
+			}
+			return role;
+		} catch (error) {
+			throw new BadRequestException('Role not found', { cause: error });
+		}
+	}
 
-	create(user: typeof CreateUserDto.schema.static): Promise<User> {
-		return this._sequelize.transaction(async (t) => {
-			const role = await this._roleModel.findByPk(user.roleId, {
-				transaction: t,
-			});
-			if (!role) throw new BadRequestException('Role not found');
-
-			const userAttributes = {
-				email: user.email,
-				password: user.password,
-			} as CreationAttributes<User>;
-			const createdUser = await this._userModel.create(userAttributes, {
-				transaction: t,
-			});
-
-			if (user.profile)
-				await this._profileModel.create(
+	async createUserWithDetails(
+		createUserWithDetailsDto: CreateUserWithDetailsDto,
+	): Promise<User> {
+		const transaction = await this._sequelize.transaction();
+		try {
+			const createdUser = await this._userModel.create<User>(
+				{
+					email: createUserWithDetailsDto.email,
+					password: createUserWithDetailsDto.password,
+					roleId: createUserWithDetailsDto.roleId,
+				},
+				{
+					include: [Profile, Role],
+					transaction,
+				},
+			);
+			if (!createdUser) {
+				throw new BadRequestException('User could not be created');
+			}
+			if (createUserWithDetailsDto.profile) {
+				const [updatedProfile] = await this._profileModel.upsert(
 					{
-						firstName: user.profile.firstName,
-						lastName: user.profile.lastName,
 						userId: createdUser.id,
+						...createUserWithDetailsDto.profile,
 					},
-					{ transaction: t },
-				);
-
-			return createdUser.reload({
-				transaction: t,
-				include: [
 					{
-						include: [Permission],
-						model: Role,
+						transaction,
 					},
-					Profile,
-				],
+				);
+				if (!updatedProfile) {
+					throw new BadRequestException(
+						'Profile could not be updated',
+					);
+				}
+				await createdUser.$set('profile', updatedProfile, {
+					transaction,
+				});
+			}
+			const savedUser = await createdUser.save({ transaction });
+			await transaction.commit();
+			return savedUser;
+		} catch (error) {
+			await transaction.rollback();
+			throw new BadRequestException('User could not be created', {
+				cause: error,
 			});
-		});
+		}
 	}
 }

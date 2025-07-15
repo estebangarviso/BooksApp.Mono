@@ -32,7 +32,7 @@ export class AuthService {
 	): Promise<typeof JwtTokensDto.schema.static> {
 		const { email, password } =
 			loginBodyDto as typeof LoginBodyDto.schema.static;
-		const user = await this._usersService.findOneByUsername(email);
+		const user = await this._usersService.findOneByEmail(email);
 		if (!user) {
 			throw new UnauthorizedException(undefined, {
 				cause: 'User not found',

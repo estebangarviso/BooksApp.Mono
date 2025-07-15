@@ -1,20 +1,48 @@
 import {
+	type HealthCheckResult,
 	HealthCheckService,
 	MemoryHealthIndicator,
+	SequelizeHealthIndicator,
 	TerminusModule,
-	TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { beforeAll, describe, expect, it, test, vi } from 'vitest';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+import { ApiKey } from '../../../decorators/api-key.guard.ts';
 import { HealthController } from './health.controller';
+
+const mockHealthService = {
+	check: vi.fn(() => Promise.resolve({})),
+};
+
+const mockApyKeyGuard = {
+	canActivate: vi.fn(() => true),
+};
 
 describe(HealthController.name, () => {
 	let controller: HealthController;
 	let healthService: HealthCheckService;
-
-	beforeAll(async () => {
-		const TypeOrmHealthIndicatorProvider = {
-			provide: TypeOrmHealthIndicator,
+	const healthCheckResult: HealthCheckResult = {
+		error: {},
+		info: {},
+		status: 'ok',
+		details: {
+			database: {
+				error: {},
+				status: 'up',
+			},
+			memory_heap: {
+				error: {},
+				status: 'up',
+			},
+			memory_rss: {
+				error: {},
+				status: 'up',
+			},
+		},
+	};
+	beforeEach(async () => {
+		const SequelizeHealthIndicatorProvider = {
+			provide: SequelizeHealthIndicator,
 			useValue: {
 				pingCheck: () => Promise.resolve(),
 			},
@@ -29,20 +57,20 @@ describe(HealthController.name, () => {
 		};
 		const HealthCheckServiceProvider = {
 			provide: HealthCheckService,
-			useFactory: () => ({
-				check: vi.fn(() => Promise.resolve()),
-			}),
+			useValue: mockHealthService,
 		};
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
-				TypeOrmHealthIndicatorProvider,
+				SequelizeHealthIndicatorProvider,
 				MemoryHealthIndicatorProvider,
-				HealthCheckService,
 				HealthCheckServiceProvider,
 			],
 			controllers: [HealthController],
 			imports: [TerminusModule],
-		}).compile();
+		})
+			.overrideGuard(ApiKey)
+			.useValue(mockApyKeyGuard)
+			.compile();
 
 		controller = module.get<HealthController>(HealthController);
 		healthService = module.get<HealthCheckService>(HealthCheckService);
@@ -52,10 +80,14 @@ describe(HealthController.name, () => {
 		expect(controller).toBeDefined();
 	});
 
-	it('check', async () => {
-		const checkSpy = vi.spyOn(healthService, 'check');
-		const healthCheckResult = await controller.check();
-		expect(checkSpy).toHaveBeenCalled();
-		expect(healthCheckResult).not.toBeNull();
+	describe('check', () => {
+		it('should call healthService.check and return health check result', async () => {
+			mockHealthService.check.mockResolvedValue(healthCheckResult);
+			const result = await controller.check();
+			expect(mockHealthService.check).toHaveBeenCalled();
+			expect(result).toBeDefined();
+			expect(result).not.toBeNull();
+			expect(result.status).toBe('ok');
+		});
 	});
 });

@@ -1,7 +1,16 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '#db';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
+import { env } from '#config';
+import { Profile, Role, User, UserAttributes } from '#db';
+import { FindOptions, Op } from 'sequelize';
 import { CreateUserResponseDto } from '../dtos/create-user-response.dto';
 import { CreateUserDto } from '../dtos/create-user.dto';
+import { PaginateUsersDto } from '../dtos/paginate-users.dto';
+import { PaginatedUserDto } from '../dtos/paginated-user.dto';
 import {
 	type IUsersRepository,
 	USERS_REPOSITORY,
@@ -14,16 +23,16 @@ export class UsersService {
 		private readonly usersRepository: IUsersRepository,
 	) {}
 
-	findOneByUsername(email: string): Promise<User | null> {
-		return this.usersRepository.findOneByUsername(email);
+	findOneByEmail(email: string): Promise<User | null> {
+		return this.usersRepository.findOneByEmail(email);
 	}
 
 	findOneById(id: string): Promise<User | null> {
 		return this.usersRepository.findOne(id);
 	}
 
-	findWithPermissions(id: string): Promise<User | null> {
-		return this.usersRepository.findWithPermissions(id);
+	findOneWithPermissions(id: string): Promise<User | null> {
+		return this.usersRepository.findOneWithPermissions(id);
 	}
 
 	async updateRefreshToken(
@@ -46,22 +55,136 @@ export class UsersService {
 		await user.save();
 	}
 
-	async create(
-		user: CreateUserDto,
+	async createUserWithDetails(
+		createUserDto: typeof CreateUserDto.schema.static,
 	): Promise<typeof CreateUserResponseDto.schema.static> {
 		try {
-			const createdUser = await this.usersRepository.create(
-				user as typeof CreateUserDto.schema.static,
+			const existingUser = await this.usersRepository.findOneByEmail(
+				createUserDto.email,
 			);
-			if (!createdUser) {
-				throw new NotFoundException('User could not be created');
+			if (existingUser) {
+				throw new BadRequestException(
+					`User with email ${createUserDto.email} already exists`,
+				);
 			}
-			return CreateUserResponseDto.schema.parse(createdUser);
+			const role = await this.usersRepository.findRoleByRoleId(
+				createUserDto.roleId,
+			);
+			if (!role) throw new BadRequestException('Role not found');
+
+			const createdUserWithDetails =
+				await this.usersRepository.createUserWithDetails({
+					email: createUserDto.email,
+					password: this._generateRandomPassword(),
+					roleId: role.id,
+					profile: {
+						firstName: createUserDto.firstName,
+						lastName: createUserDto.lastName,
+					},
+				});
+			return {
+				id: createdUserWithDetails.id,
+				createdAt: createdUserWithDetails.createdAt,
+				email: createdUserWithDetails.email,
+				firstName: createdUserWithDetails.profile?.firstName || '',
+				hasAccess: createdUserWithDetails.hasAccess(),
+				lastName: createdUserWithDetails.profile?.lastName || '',
+				roleName: role.name,
+				updatedAt: createdUserWithDetails.updatedAt,
+			};
 		} catch (error) {
 			throw new NotFoundException('User could not be created', {
 				cause: error,
 				description: 'An error occurred while creating the user.',
 			});
 		}
+	}
+
+	/**
+	 * Finds users with pagination, filtering, and sorting options.
+	 *
+	 * @param options - Pagination and filtering options.
+	 * @returns A promise that resolves to an object containing the count of users and the rows of users.
+	 * @example
+	 * ```typescript
+	 * const result = await usersService.search({
+	 *   includeDeleted: false,
+	 *   limit: 20,
+	 *   page: 1,
+	 *   search: 'John Doe',
+	 *   sortBy: 'title',
+	 *   sortOrder: 'asc',
+	 * });
+	 * console.log(result.count); // Total number of users found matching the criteria
+	 * console.log(result.rows); // Array of Book instances
+	 * ```
+	 *
+	 * @throws {NotFoundException} if no books are found.
+	 */
+	async search(options?: typeof PaginateUsersDto.schema.static): Promise<{
+		count: number;
+		rows: (typeof PaginatedUserDto.schema.static)[];
+	}> {
+		const {
+			includeDeleted = false,
+			limit = 10,
+			page = 1,
+			search = '',
+			sortBy = 'email',
+			sortOrder = 'asc',
+		} = options || {};
+		const findOptions: FindOptions<UserAttributes> = {
+			paranoid: !includeDeleted,
+			include: [Profile, Role],
+			limit,
+			offset: (page - 1) * limit,
+			order: [[sortBy, sortOrder.toUpperCase()]],
+			where: {},
+			attributes: [
+				'createdAt',
+				'email',
+				['$profile.firstName$', 'firstName'],
+				'isActive',
+				['$profile.lastName$', 'lastName'],
+				['$role.name$', 'roleName'],
+				'updatedAt',
+			],
+		};
+		if (search) {
+			findOptions.where = {
+				[Op.or]: [
+					{ email: { [Op.iLike]: `%${search}%` } },
+					{ '$profile.firstName$': { [Op.iLike]: `%${search}%` } },
+					{ '$profile.lastName$': { [Op.iLike]: `%${search}%` } },
+				],
+			};
+		}
+		const result = await this.usersRepository.paginate<
+			typeof PaginatedUserDto.schema.static
+		>(page, limit, findOptions);
+
+		if (result.totalRecords === 0) {
+			throw new NotFoundException(
+				'No users found matching the criteria.',
+			);
+		}
+
+		return {
+			count: result.totalRecords,
+			rows: result.data,
+		};
+	}
+
+	private _generateRandomPassword(
+		length: number = env.APP.MIN_PASSWORD_LENGTH,
+	): string {
+		const charset =
+			'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+[]{}|;:,.<>?';
+		let password = '';
+		for (let i = 0; i < length; i++) {
+			const randomIndex = Math.floor(Math.random() * charset.length);
+			password += charset[randomIndex];
+		}
+		return password;
 	}
 }

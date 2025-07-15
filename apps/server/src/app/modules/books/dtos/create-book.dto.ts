@@ -3,8 +3,7 @@ import { Type } from '@sinclair/typebox';
 import { AjvDto } from '#libs/ajv';
 
 export class CreateBookDto extends AjvDto({
-	price: Type.Number({ description: 'Price of the book', example: 10.25 }),
-	author: Type.String({
+	authorName: Type.String({
 		description: 'Author of the book',
 		example: 'F. Scott Fitzgerald',
 	}),
@@ -30,7 +29,12 @@ export class CreateBookDto extends AjvDto({
 			example: '978-3-16-148410-0',
 		}),
 	),
-	publisher: Type.String({
+	price: Type.Number({
+		description: 'Price of the book',
+		example: 10.25,
+		minimum: 0,
+	}),
+	publisherName: Type.String({
 		description: 'Publisher of the book',
 		example: "Charles Scribner's Sons",
 	}),

@@ -1,9 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Author, BaseRepository, Book, Genre, Publisher } from '#db';
-import { CreationAttributes, FindOptions } from 'sequelize';
+import {
+	Author,
+	BaseRepository,
+	Book,
+	BookAttributes,
+	Genre,
+	Publisher,
+} from '#db';
+import {
+	Attributes,
+	CreateOptions,
+	CreationAttributes,
+	FindOptions,
+} from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
+import type { C } from 'vitest/dist/chunks/environment.d.cL3nLXbE.js';
 import { CreateBookDto } from '../dtos/create-book.dto';
+import type { PaginatedBookDto } from '../dtos/paginated-book.dto.ts';
 import { IBooksRepository } from '../interfaces/books.repository.interface';
 
 @Injectable()
@@ -11,6 +25,24 @@ export class BooksRepository
 	extends BaseRepository<Book>
 	implements IBooksRepository
 {
+	findByIsbn(
+		isbn: string,
+		options?: Omit<FindOptions<BookAttributes>, 'where'>,
+	): Promise<Book | null> {
+		return this.bookModel.findOne({
+			...options,
+			where: { isbn },
+		});
+	}
+	findByTitle(
+		title: string,
+		options?: Omit<FindOptions<BookAttributes>, 'where'>,
+	): Promise<Book | null> {
+		return this.bookModel.findOne({
+			...options,
+			where: { title },
+		});
+	}
 	constructor(
 		@InjectModel(Book) private readonly bookModel: typeof Book,
 		@InjectModel(Author) private readonly authorModel: typeof Author,
@@ -30,34 +62,60 @@ export class BooksRepository
 	 * @param createBookDto - The DTO containing book details.
 	 * @returns The created book instance with related entities.
 	 */
-	create(createBookDto: typeof CreateBookDto.schema.static): Promise<Book> {
+	createWithDetails(
+		createBookDto: CreateBookDto,
+	): Promise<typeof PaginatedBookDto.schema.static> {
 		return this.sequelize.transaction(async (t) => {
+			const {
+				authorName,
+				availability,
+				genres,
+				imageUrl,
+				isbn,
+				price,
+				publisherName,
+				title,
+			} = createBookDto as typeof CreateBookDto.schema.static;
 			const [author] = await this.authorModel.findOrCreate({
 				transaction: t,
-				where: { name: createBookDto.author },
+				where: { name: authorName },
 			});
 
 			const [publisher] = await this.publisherModel.findOrCreate({
 				transaction: t,
-				where: { name: createBookDto.publisher },
+				where: { name: publisherName },
 			});
 
 			const bookAttributes: CreationAttributes<Book> = {
 				authorId: author.id,
-				availability: createBookDto.availability,
-				imageUrl: createBookDto.imageUrl,
-				isbn: createBookDto.isbn,
-				price: createBookDto.price,
+				availability,
+				imageUrl,
+				isbn,
+				price,
 				publisherId: publisher.id,
-				title: createBookDto.title,
+				title,
 			} as CreationAttributes<Book>;
 			const createdBook = await this.bookModel.create(bookAttributes, {
 				transaction: t,
+				include: [
+					{
+						attributes: ['name'],
+						model: Author,
+					},
+					{
+						attributes: ['name'],
+						model: Publisher,
+					},
+					{
+						attributes: ['name'],
+						model: Genre,
+					},
+				],
 			});
 
-			if (createBookDto.genres && createBookDto.genres.length > 0) {
+			if (genres && genres.length > 0) {
 				const genreInstances = await Promise.all(
-					createBookDto.genres.map((genreName) =>
+					genres.map((genreName) =>
 						this.genreModel
 							.findOrCreate({
 								transaction: t,
@@ -70,16 +128,47 @@ export class BooksRepository
 					transaction: t,
 				});
 			}
-
-			return createdBook.reload({
-				include: [Author, Publisher, Genre],
-				transaction: t,
-			});
+			const savedBook = await createdBook.save({ transaction: t });
+			return {
+				id: savedBook.id,
+				authorName: savedBook.author.name,
+				availability: savedBook.availability,
+				genres: savedBook.genres.map((genre) => genre.name),
+				imageUrl: savedBook.imageUrl,
+				isbn: savedBook.isbn,
+				price: savedBook.price,
+				publisherName: savedBook.publisher.name,
+				title: savedBook.title,
+			} satisfies typeof PaginatedBookDto.schema.static;
 		});
 	}
-	paginate(
-		options?: FindOptions<Book> | undefined,
-	): Promise<{ count: number; rows: Book[] }> {
-		return super.paginate(options);
+
+	findAllForExport(includeDeleted: boolean): AsyncGenerator<Book> {
+		const BATCH_SIZE = 100;
+		let offset = 0;
+
+		const asyncGenerator = async function* (this: BooksRepository) {
+			while (true) {
+				const books = await this.bookModel.findAll({
+					paranoid: !includeDeleted,
+					include: [Author, Publisher, Genre],
+					limit: BATCH_SIZE,
+					offset,
+					order: [['title', 'ASC']],
+				});
+
+				if (books.length === 0) {
+					break;
+				}
+
+				for (const book of books) {
+					yield book;
+				}
+
+				offset += BATCH_SIZE;
+			}
+		}.bind(this);
+
+		return asyncGenerator();
 	}
 }

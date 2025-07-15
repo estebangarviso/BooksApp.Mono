@@ -4,13 +4,13 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
-import { AuthenticationBasedAccessStrategy } from './strategies/abac.strategy';
+import { AttributeBasedAccessStrategy } from './strategies/abac.strategy';
 import { RefreshAuthenticationStrategy } from './strategies/refresh-authentication.strategy';
 
 @Module({
 	providers: [
 		AuthService,
-		AuthenticationBasedAccessStrategy,
+		AttributeBasedAccessStrategy,
 		RefreshAuthenticationStrategy,
 	],
 	controllers: [AuthController],

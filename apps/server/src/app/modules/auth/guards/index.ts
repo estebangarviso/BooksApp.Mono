@@ -1,1 +1,1 @@
-export * from './refresh-authentication.guard';
+export * from './refresh-access.guard';

@@ -1,7 +1,10 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+import type { Book } from '#db';
+import { AuthGuards } from '#libs/decorators';
+import { stringify } from 'csv-stringify';
 import type { FastifyReply } from 'fastify';
+import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthenticationBasedAccessGuard } from '../../../../libs/guards/abac.guard';
 import { type CreateBookDto } from '../dtos/create-book.dto';
 import { type PaginateBooksDto } from '../dtos/paginate-books.dto';
 import { type UpdateBookDto } from '../dtos/update-book.dto';
@@ -10,8 +13,9 @@ import { BooksController } from './books.controller';
 
 const mockBooksService = {
 	create: vi.fn(),
-	exportToCsv: vi.fn(),
+	findAllForExport: vi.fn(),
 	findOne: vi.fn(),
+	getBooksCsvStringifier: vi.fn(() => stringify({ header: true })),
 	remove: vi.fn(),
 	search: vi.fn(),
 	update: vi.fn(),
@@ -25,6 +29,19 @@ describe(BooksController.name, () => {
 	let controller: BooksController;
 	let service: BooksService;
 
+	async function* bookStreamWithData(): AsyncGenerator<Book> {
+		yield {
+			id: '1',
+			author: { name: 'Test Author' },
+			availability: true,
+			genres: [{ name: 'Fiction' }, { name: 'Adventure' }],
+			isbn: '1234567890',
+			price: 19.99,
+			publisher: { name: 'Test Publisher' },
+			title: 'Test Book',
+		} as Book;
+	}
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -35,7 +52,7 @@ describe(BooksController.name, () => {
 			],
 			controllers: [BooksController],
 		})
-			.overrideGuard(AuthenticationBasedAccessGuard)
+			.overrideGuard(AuthGuards)
 			.useValue(mockAccessTokenAuthGuard)
 			.compile();
 
@@ -80,29 +97,26 @@ describe(BooksController.name, () => {
 		});
 	});
 
-	describe('exportToCsv', () => {
-		it('should export books to csv', () => {
-			const mockCsvStream = 'csv,data';
-			mockBooksService.exportToCsv.mockReturnValue(mockCsvStream);
+	describe('findAllForExport', () => {
+		it('should export books to csv', async () => {
+			const bookStream = bookStreamWithData();
+			mockBooksService.findAllForExport.mockReturnValue(bookStream);
 
 			const mockReply = {
 				header: vi.fn(),
 				send: vi.fn(),
 			} as unknown as FastifyReply;
 
-			const result = controller.exportToCsv(mockReply);
+			const result = await controller.findAllForExport(mockReply);
 
-			expect(service.exportToCsv).toHaveBeenCalled();
-			expect(mockReply.header).toHaveBeenCalledWith(
-				'Content-Type',
-				'text/csv',
-			);
+			expect(service.findAllForExport).toHaveBeenCalled();
+			expect(mockReply.header).toHaveBeenCalledTimes(1);
 			expect(mockReply.header).toHaveBeenCalledWith(
 				'Content-Disposition',
 				expect.stringContaining('attachment; filename="books_'),
 			);
-			expect(mockReply.send).toHaveBeenCalledWith(mockCsvStream);
-			expect(result).toBe(mockCsvStream);
+			expect(mockReply.send).toHaveBeenCalled();
+			expect(result).toBeUndefined();
 		});
 	});
 

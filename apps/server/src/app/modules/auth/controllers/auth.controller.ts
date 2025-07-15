@@ -6,14 +6,14 @@ import {
 	Post,
 	UseGuards,
 } from '@nestjs/common';
-import { GetCurrentUserId } from '../../../../libs/decorators/get-current-user-id.decorator';
-import { AuthenticationBasedAccessGuard } from '../../../../libs/guards/abac.guard';
+import { GetCurrentUserId } from '#libs/decorators';
+import { AttributeBasedAccessGuard } from '#libs/guards';
 import { ApplyControllerDocs } from '../../../decorators/docs.decorator';
 import { JwtTokensDto } from '../dtos/jwt-tokens.dto';
 import { LoginBodyDto } from '../dtos/login-body.dto';
 import { LogoutResponseDto } from '../dtos/logout-response.dto';
 import { RefreshAccessTokenDto } from '../dtos/refresh-access-token.dto';
-import { RefreshAuthenticationAccessGuard } from '../guards/refresh-authentication.guard';
+import { RefreshAccessGuard } from '../guards/refresh-access.guard';
 import { AuthService } from '../services/auth.service';
 import { AuthControllerDocs } from './auth.controller.docs';
 
@@ -24,29 +24,27 @@ export class AuthController {
 
 	@HttpCode(HttpStatus.OK)
 	@Post('login')
-	login(
-		@Body() loginBodyDto: LoginBodyDto,
-	): Promise<typeof JwtTokensDto.schema.static> {
+	login(@Body() loginBodyDto: LoginBodyDto): Promise<JwtTokensDto> {
 		return this._authService.signIn(loginBodyDto);
 	}
 
-	@UseGuards(AuthenticationBasedAccessGuard)
+	@UseGuards(AttributeBasedAccessGuard)
 	@HttpCode(HttpStatus.OK)
 	@Post('logout')
 	async logout(
 		@GetCurrentUserId() userId: string,
-	): Promise<typeof LogoutResponseDto.schema.static> {
+	): Promise<LogoutResponseDto> {
 		await this._authService.signOut(userId);
 		return { message: 'User logged out successfully' };
 	}
 
-	@UseGuards(RefreshAuthenticationAccessGuard)
+	@UseGuards(RefreshAccessGuard)
 	@Post('refresh')
 	@HttpCode(HttpStatus.OK)
 	refresh(
 		@GetCurrentUserId() userId: string,
 		@Body('refreshToken') refreshToken: string,
-	): Promise<typeof RefreshAccessTokenDto.schema.static> {
+	): Promise<RefreshAccessTokenDto> {
 		return this._authService.refreshAccessToken(userId, refreshToken);
 	}
 }

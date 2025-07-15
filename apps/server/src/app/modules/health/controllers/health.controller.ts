@@ -7,6 +7,7 @@ import {
 	MemoryHealthIndicator,
 	SequelizeHealthIndicator,
 } from '@nestjs/terminus';
+import { ApiKey } from '../../../decorators/api-key.guard.ts';
 
 /**
  * Health controller for the NestJS application using Terminus.
@@ -15,6 +16,7 @@ import {
  * @class HealthController
  */
 @ApiTags('Health')
+@ApiKey()
 @Controller({
 	path: 'health',
 	version: VERSION_NEUTRAL,
@@ -27,8 +29,8 @@ export class HealthController {
 	 */
 	constructor(
 		private readonly _health: HealthCheckService,
-		private db: SequelizeHealthIndicator,
-		private memory: MemoryHealthIndicator,
+		private readonly db: SequelizeHealthIndicator,
+		private readonly memory: MemoryHealthIndicator,
 	) {}
 
 	/**
