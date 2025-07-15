@@ -18,9 +18,10 @@ export declare global {
 
 			// SECTION: other app settings
 			readonly ALLOWED_ORIGINS: string;
-			readonly MIN_PASSWORD_LENGTH: string; // minimum password length for user registration
+			readonly MIN_PASSWORD_LENGTH: string;
 			readonly REQUEST_MAX_JSON_BODY_SIZE: string;
 			readonly REQUEST_TIMEOUT: string;
+			readonly REQUEST_TIMEOUT_MS: string;
 			readonly SUPPORTED_LANGS: string;
 
 			// SECTION: database
@@ -46,15 +47,15 @@ export declare global {
 			readonly TZ: string;
 
 			// SECTION: api security
-			readonly SECURITY_API_KEY: string; // value of the api key header
-			readonly SECURITY_BCRYPT_SALT_ROUNDS: string; // bcrypt salt rounds for password hashing
-			readonly SECURITY_JWT_ACCESS_TOKEN_EXPIRES_IN: string; // jWT access token expiration time
-			readonly SECURITY_JWT_ACCESS_TOKEN_SECRET: string; // secret for JWT token signing
-			readonly SECURITY_JWT_ALGORITHM: JWTAlgorithm; // jWT signing algorithm
-			readonly SECURITY_JWT_REFRESH_SECRET: string; // secret for JWT refresh token signing
-			readonly SECURITY_JWT_REFRESH_TOKEN_EXPIRES_IN: string; // jWT refresh token expiration time
-			readonly SECURITY_SUPER_ADMIN_EMAIL: string; // email for the super admin user
-			readonly SECURITY_SUPER_ADMIN_PASS: string; // password for the super admin user
+			readonly SECURITY_API_KEY: string;
+			readonly SECURITY_BCRYPT_SALT_ROUNDS: string;
+			readonly SECURITY_JWT_ACCESS_TOKEN_EXPIRES_IN: string;
+			readonly SECURITY_JWT_ACCESS_TOKEN_SECRET: string;
+			readonly SECURITY_JWT_ALGORITHM: JWTAlgorithm;
+			readonly SECURITY_JWT_REFRESH_SECRET: string;
+			readonly SECURITY_JWT_REFRESH_TOKEN_EXPIRES_IN: string;
+			readonly SECURITY_SUPER_ADMIN_EMAIL: string;
+			readonly SECURITY_SUPER_ADMIN_PASS: string;
 			readonly SECURITY_ENABLED?: booleanString;
 		}
 	}
