@@ -18,6 +18,7 @@ import { json } from 'body-parser';
 import type { Server } from 'node:http';
 import path from 'node:path';
 import { Sequelize } from 'sequelize-typescript';
+import { HttpExceptionFilter } from '../libs/filters/http-exception.filter.ts';
 import { AppModule } from './app.module.ts';
 import {
 	ApiKeyGuard,
@@ -96,6 +97,7 @@ export const start = async ({ port = 0, prefix, swagger }: AppStartConfig) => {
 		root: path.join(path.dirname(''), '../../public'),
 	});
 	app.enableVersioning();
+	app.use(json({ limit: env.APP.REQUEST_TIMEOUT }));
 	app.setGlobalPrefix(prefix);
 	app.useGlobalPipes(
 		new AjvValidationPipe({
@@ -106,7 +108,7 @@ export const start = async ({ port = 0, prefix, swagger }: AppStartConfig) => {
 			},
 		}),
 	);
-	app.use(json({ limit: env.APP.REQUEST_TIMEOUT }));
+	app.useGlobalFilters(new HttpExceptionFilter());
 
 	if (swagger) addSwagger(app, prefix);
 
