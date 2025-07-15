@@ -36,6 +36,22 @@ This README provides instructions on how to run a fullstack application which us
 -  Create unit tests for services and controllers in NestJS.
 -  Achieve code coverage of at least 80%.
 
+## DevOps and Deployment
+- Provide a docker-compose.yml file for local deployment of the entire stack.✅
+
+## Documatation
+- Create a detailed README.md with:
+  - Installation and configuration instructions. ✅
+  - Application user guide. ✅
+  - Description of the architecture and design decisions. ✅
+- Document the API using Swagger/OpenAPI. ✅
+- Provide a diagram of the system architecture. 🔨
+- Include a relational model of the database (can be in image format or using tools like dbdiagram.io). 🔨
+
+## Additional Features:
+- Implement error handling on both the frontend and backend. 🌓
+- Use NestJS interceptors to transform and manipulate responses. ✅
+
 ## Workflow
 
 <p align="center">
