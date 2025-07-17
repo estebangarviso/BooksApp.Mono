@@ -5,7 +5,7 @@ import { AuthModule, BooksModule, UsersModule } from './modules/index.ts';
 
 @Module({
 	imports: [
-		SequelizeModule.forRoot(getDatabaseOptions()),
+		SequelizeModule.forRoot(getDatabaseOptions),
 		AuthModule,
 		BooksModule,
 		UsersModule,
