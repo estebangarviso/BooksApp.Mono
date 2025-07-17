@@ -7,9 +7,12 @@ import {
 	type ArrayOptions,
 	type ObjectOptions,
 	type Static,
-	type StaticDecode,
 	type TAny,
 	type TArray,
+	type TBoolean,
+	type TNumber,
+	type TObject,
+	type TOmit,
 	type TProperties,
 	type TSchema,
 	type TTuple,
@@ -22,6 +25,9 @@ type InferTuple<Tuple extends [...TSchema[]]> = {
 	[Index in keyof Tuple]: Static<Tuple[Index]>;
 };
 type InferArray<Arr extends [...TSchema[]]> = Static<Arr[0]>[];
+type InputShape<T> = Record<string, any> & {
+	[key in keyof T]?: unknown;
+};
 
 const registeredDtoOpenApiSchemas: [name: string, schema: object][] = [];
 
@@ -49,12 +55,15 @@ function getRefObj(name: string): ReferenceObject {
 function schemaInputParser<T extends TSchema>(
 	schema: T,
 	input: unknown,
-): StaticDecode<T> {
-	return Value.Parse<T, StaticDecode<T>>(schema, input);
+): Static<T> {
+	return Value.Parse<T, Static<T>>(schema, input);
 }
 
 /**
  * Ajv DTO decorator for OpenApi Swagger.
+ *
+ * @param properties - ajv properties for the DTO
+ * @param config - ajv type config
  *
  * @example
  * ```ts
@@ -91,15 +100,22 @@ function schemaInputParser<T extends TSchema>(
 export const AjvDto = <P extends TProperties = TProperties>(
 	properties: P,
 	config?: ObjectOptions,
-) => {
+): AjvObjectDto<TObject<P>> => {
+	const schema = Type.Object(properties, config);
 	return class {
-		static schema = Type.Object(properties, config);
+		constructor(fields?: InputShape<Static<typeof schema>>) {
+			if (fields) {
+				Object.assign(this, schemaInputParser(schema, fields));
+			}
+		}
+
+		static schema = schema;
 
 		static get refObj(): ReferenceObject {
 			return getRefObj(this.name);
 		}
 
-		static parseSchema(input: unknown): StaticDecode<typeof this.schema> {
+		static parseSchema(input: unknown): Static<typeof this.schema> {
 			return schemaInputParser(this.schema, input);
 		}
 
@@ -114,7 +130,7 @@ export const AjvDto = <P extends TProperties = TProperties>(
 
 			registeredDtoOpenApiSchemas.push([name, this.schema]);
 		}
-	};
+	} as AjvObjectDto<TObject<P>>;
 };
 
 /**
@@ -178,7 +194,7 @@ export const AjvIterableDto = <
 			return getRefObj(this.name);
 		}
 
-		static parseSchema(input: unknown): StaticDecode<typeof this.schema> {
+		static parseSchema(input: unknown): Static<typeof this.schema> {
 			return schemaInputParser(schema, input);
 		}
 
@@ -201,6 +217,98 @@ export const AjvIterableDto = <
 			}
 		}
 	};
+};
+
+/**
+ * Creates a DTO from ajv array,
+ * with pagination properties.
+ * @param data - ajv type for data array
+ * @example
+ * ```ts
+ * // paginated.dto.ts
+ * import { Type } from '@sinclair/typebox';
+ * import { AjvPageDto } from '#libs/ajv';
+ *
+ * export class PaginatedDto extends AjvPageDto(
+ *   Type.Array(Type.String(), {
+ *     description: 'Array of strings',
+ *     examples: ['example1', 'example2'],
+ *   }),
+ * ) {}
+ * // or
+ * export class PaginatedDto extends AjvPageDto(
+ *   Type.Array(Type.Object({
+ *     id: Type.String(),
+ *     name: Type.String(),
+ *   }), {
+ *     description: 'Array of objects with id and name',
+ *     examples: [{ id: '1', name: 'Item 1' }, { id: '2', name: 'Item 2' }],
+ *   }),
+ * ) {}
+ *
+ * PaginatedDto.registerOpenApi();
+ * // paginated.controller.ts
+ * import { PaginatedDto } from './paginated.dto.ts';
+ * \@Controller('paginated')
+ * export class PaginatedController {
+ *   \@Get()
+ *   \@ApiResponse({ status: 200, description: 'Paginated response', type: PaginatedDto.schema })
+ *   getPaginated(): PaginatedDto {
+ *     // return paginated data
+ *   }
+ * }
+ * // paginated.parser.ts
+ * import { PaginatedDto } from './paginated.dto.ts';
+ * export const parsePaginatedDto = (input: unknown) => {
+ *   return PaginatedDto.parseSchema(input);
+ * };
+ * ```
+ */
+export const AjvPageDto = <T extends TSchema = TSchema>(
+	data: T,
+	options: RequiredPickedType<ArrayOptions, 'description' | 'examples'>,
+): AjvObjectDto<TPageDto<T>> => {
+	// create a schema for pagination DTO
+	return class {
+		static get refObj(): ReferenceObject {
+			return getRefObj(this.name);
+		}
+		static schema = Type.Object({
+			data: Type.Array(data, options),
+			currentPage: Type.Number({
+				description: 'Current page number',
+				example: 1,
+			}),
+			hasMorePages: Type.Boolean({
+				description: 'Indicates if there are more pages available',
+				example: false,
+			}),
+			lastPage: Type.Number({
+				example: 1,
+				description:
+					'Last page number based on the total records and limit',
+			}),
+			totalRecords: Type.Number({
+				description: 'Total number of records across all pages',
+				example: 2,
+			}),
+		});
+
+		static parseSchema(input: unknown): Static<typeof this.schema> {
+			return schemaInputParser(this.schema, input);
+		}
+
+		static registerOpenApi(): void {
+			const name = this.name;
+			if (registeredDtoOpenApiSchemas.some(([n]) => n === name)) {
+				throw new RuntimeException(
+					`OpenApi schema for pagination DTO "${name}" is already registered.`,
+				);
+			}
+
+			registeredDtoOpenApiSchemas.push([name, this.schema]);
+		}
+	} as AjvObjectDto<TPageDto<T>>;
 };
 
 /**
@@ -230,7 +338,7 @@ export interface AjvDto<S extends TSchema = TSchema> {
 	 * @returns Parsed input as per the schema
 	 * @throws {AssertError} If the schema does not have a parse method
 	 */
-	readonly parseSchema: (input: unknown) => StaticDecode<S>;
+	readonly parseSchema: (input: unknown) => Static<S>;
 	/**
 	 * Registers the DTO schema to OpenApi Swagger document.
 	 */
@@ -250,6 +358,26 @@ export interface AjvIterableDto<
 > extends AjvDto<A> {
 	new (items?: I | unknown[]): T[];
 }
+
+/**
+ * Ajv DTO from object/shape.
+ */
+export interface AjvObjectDto<A extends TSchema = TSchema, I = Static<A>>
+	extends AjvDto<A> {
+	new (fields?: InputShape<I>): I;
+}
+
+export type TPageDto<T extends TSchema = TSchema> = TObject<{
+	currentPage: TNumber;
+	data: TArray<T>;
+	hasMorePages: TBoolean;
+	lastPage: TNumber;
+	totalRecords: TNumber;
+}>;
+
+export type TPage<T> = Static<TOmit<TPageDto, ['data']>> & {
+	data: T[];
+};
 
 /**
  * Register Ajv DTOs schemas to

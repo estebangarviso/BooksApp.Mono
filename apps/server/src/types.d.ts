@@ -5,4 +5,5 @@ export declare global {
 	type isbn = string;
 	type booleanString = 'false' | 'true';
 	type ajvI18nLanguages = keyof typeof localize;
+	type RequiredPickedType<T, K extends keyof T> = Required<Pick<T, K>>;
 }
