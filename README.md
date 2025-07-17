@@ -76,7 +76,7 @@ This monorepo uses pnpm workspaces to manage the frontend and backend applicatio
 ```bash
 pnpm --filter <package-name> <command>
 # Example:
-pnpm --filter @c2c/client install <package-name>
+pnpm --filter @c2c/books-client install <package-name>
 ```
 
 ## Maintaining the Application
