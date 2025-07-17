@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
 import { NotFoundException } from '@nestjs/common';
+import { type TPage } from '#libs/ajv';
 import {
 	type Attributes,
 	type CreateOptions,
+	type CreationAttributes,
 	type FindOptions,
 	type Identifier,
-	type InstanceUpdateOptions,
 } from 'sequelize';
 import { type Model, type ModelCtor } from 'sequelize-typescript';
 import { type MakeNullishOptional } from 'sequelize/lib/utils';
 import { type IBaseRepository } from '../interfaces/base-repository.interface';
-import { type PaginateResult } from '../interfaces/paginate-result.interface';
 
 export class BaseRepository<T extends Model> implements IBaseRepository<T> {
 	constructor(private readonly model: ModelCtor<T>) {}
@@ -32,9 +32,7 @@ export class BaseRepository<T extends Model> implements IBaseRepository<T> {
 
 	async update(
 		id: Identifier,
-		dto: {
-			[x: string]: any;
-		},
+		dto: Partial<CreationAttributes<T>>,
 	): Promise<T | null> {
 		const record = await this.findOne(id);
 		if (!record) {
@@ -68,7 +66,7 @@ export class BaseRepository<T extends Model> implements IBaseRepository<T> {
 		currentPage: number,
 		limit: number,
 		options?: Omit<FindOptions<Attributes<T>>, 'limit' | 'offset'>,
-	): Promise<PaginateResult<C>> {
+	): Promise<TPage<C>> {
 		const offset = (currentPage - 1) * limit;
 		const { count: totalRecords, rows: data } =
 			await this.model.findAndCountAll<any>({

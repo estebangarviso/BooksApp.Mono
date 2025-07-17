@@ -8,7 +8,7 @@ import {
 import { Permission } from './permission.entity';
 import { Role } from './role.entity';
 
-interface RolePermissionAttributes {
+export interface RolePermissionAttributes {
 	permissionId: number;
 	roleId: number;
 }

@@ -11,7 +11,7 @@ import {
 import { ITimestamps } from '../../common/interfaces';
 import { Book } from './book.entity';
 
-interface PublisherAttributes extends ITimestamps {
+export interface PublisherAttributes extends ITimestamps {
 	id: string;
 	name: string;
 }

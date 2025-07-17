@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
+import { type TPage } from '#libs/ajv';
 import {
 	type Attributes,
 	type CreateOptions,
+	type CreationAttributes,
 	type FindOptions,
 	type Identifier,
-	type InstanceUpdateOptions,
 	type Model,
 } from 'sequelize';
-import { type MakeNullishOptional } from 'sequelize/lib/utils';
-import { type PaginateResult } from './paginate-result.interface';
 
 export interface IBaseRepository<T extends Model> {
 	/**
@@ -38,11 +37,12 @@ export interface IBaseRepository<T extends Model> {
 	findOne(id: Identifier): Promise<T | null>;
 	/**
 	 * Update the row corresponding to this instance with the given data.
+	 * This is the same as calling `set` and then calling `save`.
 	 * @param id - The identifier of the record to update.
 	 * @param dto - The data to update the record with.
 	 * @returns The updated instance or null if not found.
 	 */
-	update(id: Identifier, dto: InstanceUpdateOptions<T>): Promise<T | null>;
+	update(id: Identifier, dto: CreationAttributes<T>): Promise<T | null>;
 	/**
 	 * Create a new row in the database.
 	 * @param dto - The data to create the new row with.
@@ -50,7 +50,7 @@ export interface IBaseRepository<T extends Model> {
 	 * @returns The created instance or void if not applicable.
 	 */
 	create(
-		dto: MakeNullishOptional<T['_creationAttributes']>,
+		dto: CreationAttributes<T>,
 		options?: CreateOptions<Attributes<T>>,
 	): Promise<T | void>;
 	/**
@@ -62,7 +62,7 @@ export interface IBaseRepository<T extends Model> {
 		currentPage: number,
 		limit: number,
 		options?: Omit<FindOptions<Attributes<T>>, 'limit' | 'offset'>,
-	): Promise<PaginateResult<C>>;
+	): Promise<TPage<C>>;
 
 	/**
 	 * Find and count all rows in the database that match the given options.

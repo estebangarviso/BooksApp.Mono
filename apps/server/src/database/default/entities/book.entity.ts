@@ -36,7 +36,7 @@ export interface BookAttributes extends IDeletedAt, ITimestamps {
 export interface BookCreationAttributes
 	extends Optional<
 		BookAttributes,
-		keyof IDeletedAt | keyof ITimestamps | 'id' | 'imageUrl' | 'isbn'
+		keyof IDeletedAt | keyof ITimestamps | 'id'
 	> {}
 
 @Table({

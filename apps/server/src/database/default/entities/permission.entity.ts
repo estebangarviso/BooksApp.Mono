@@ -10,7 +10,7 @@ import {
 import { RolePermission } from './role-permission.entity';
 import { Role } from './role.entity';
 
-interface PermissionAttributes {
+export interface PermissionAttributes {
 	id: number;
 	action: AppPermission;
 	description?: string;

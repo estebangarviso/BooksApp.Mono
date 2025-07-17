@@ -11,12 +11,12 @@ import {
 import { ITimestamps } from '../../common/interfaces';
 import { Book } from './book.entity';
 
-interface AuthorAttributes extends ITimestamps {
+export interface AuthorAttributes extends ITimestamps {
 	id: string;
 	name: string;
 }
 
-interface AuthorCreationAttributes
+export interface AuthorCreationAttributes
 	extends Optional<AuthorAttributes, keyof ITimestamps | 'id'> {}
 
 @Table({

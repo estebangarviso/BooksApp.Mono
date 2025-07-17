@@ -22,13 +22,62 @@ export const ENTITIES = [
 	BookGenre,
 ];
 
-export * from './author.entity';
-export * from './book-genre.entity';
-export * from './book.entity';
-export * from './genre.entity';
-export * from './permission.entity';
-export * from './profile.entity';
-export * from './publisher.entity';
-export * from './role-permission.entity';
-export * from './role.entity';
-export * from './user.entity';
+export {
+	Author,
+	type AuthorAttributes,
+	type AuthorCreationAttributes,
+} from './author.entity';
+export {
+	BookGenre,
+	type BookGenreAttributes,
+	type BookGenreCreationAttributes,
+} from './book-genre.entity';
+export {
+	Book,
+	type BookAttributes,
+	type BookCreationAttributes,
+} from './book.entity';
+export {
+	Genre,
+	type GenreAttributes,
+	type GenreCreationAttributes,
+} from './genre.entity';
+export {
+	Permission,
+	type PermissionAttributes,
+	type PermissionCreationAttributes,
+} from './permission.entity';
+export {
+	Profile,
+	type ProfileAttributes,
+	type ProfileCreationAttributes,
+} from './profile.entity';
+export {
+	Publisher,
+	type PublisherAttributes,
+	type PublisherCreationAttributes,
+} from './publisher.entity';
+export {
+	RolePermission,
+	type RolePermissionAttributes,
+	type RolePermissionCreationAttributes,
+} from './role-permission.entity';
+export {
+	Role,
+	type RoleAttributes,
+	type RoleCreationAttributes,
+} from './role.entity';
+export {
+	User,
+	type UserAttributes,
+	type UserCreationAttributes,
+} from './user.entity';
+// export * from './book-genre.entity';
+// export * from './book.entity';
+// export * from './genre.entity';
+// export * from './permission.entity';
+// export * from './profile.entity';
+// export * from './publisher.entity';
+// export * from './role-permission.entity';
+// export * from './role.entity';
+// export * from './user.entity';
