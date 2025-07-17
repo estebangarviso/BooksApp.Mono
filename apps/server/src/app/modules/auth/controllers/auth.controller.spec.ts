@@ -43,11 +43,11 @@ describe('AuthController', () => {
 
 	describe('login', () => {
 		it('should call authService.signIn and return tokens', async () => {
-			const loginBodyDto: typeof LoginBodyDto.schema.static = {
+			const loginBodyDto: LoginBodyDto = {
 				email: 'demo@demo.com',
 				password: 'password',
 			};
-			const tokens: typeof JwtTokensDto.schema.static = {
+			const tokens: JwtTokensDto = {
 				accessToken: 'access',
 				refreshToken: 'refresh',
 			};

@@ -10,7 +10,7 @@ import { JwtTokensDto } from '../dtos/jwt-tokens.dto';
 import { LoginBodyDto } from '../dtos/login-body.dto';
 import { RefreshAccessTokenDto } from '../dtos/refresh-access-token.dto';
 import { AccessJwtPayload } from '../interfaces/access-jwt-payload.interface';
-import { RefreshJwtPayload } from '../interfaces/refresh-jwt-payload.inteface';
+import { RefreshJwtPayload } from '../interfaces/refresh-jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -27,11 +27,8 @@ export class AuthService {
 	 * @returns {Promise<{ access_token: string }>} A promise that resolves to an object containing the access token.
 	 * @throws {UnauthorizedException} If the user is not found or the password does not match.
 	 */
-	async signIn(
-		loginBodyDto: LoginBodyDto,
-	): Promise<typeof JwtTokensDto.schema.static> {
-		const { email, password } =
-			loginBodyDto as typeof LoginBodyDto.schema.static;
+	async signIn(loginBodyDto: LoginBodyDto): Promise<JwtTokensDto> {
+		const { email, password } = loginBodyDto;
 		const user = await this._usersService.findOneByEmail(email);
 		if (!user) {
 			throw new UnauthorizedException(undefined, {
@@ -83,7 +80,7 @@ export class AuthService {
 	async refreshAccessToken(
 		userId: string,
 		refreshToken: string,
-	): Promise<typeof RefreshAccessTokenDto.schema.static> {
+	): Promise<RefreshAccessTokenDto> {
 		const user = await this._usersService.findOneById(userId);
 		if (!user || !user.refreshToken) {
 			throw new ForbiddenException('Access Denied', {
