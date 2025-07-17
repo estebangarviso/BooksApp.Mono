@@ -2,8 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BaseRepository, Permission, Profile, Role, User } from '#db';
 import { Sequelize } from 'sequelize';
-import { type CreateUserWithDetailsDto } from '../dtos/create-user-and-profile.dto.ts';
-import { IUsersRepository } from '../interfaces/users.repository.interface';
+import {
+	CreateUserWithDetailsDto,
+	IUsersRepository,
+} from '../interfaces/users.repository.interface';
 
 @Injectable()
 export class UsersRepository

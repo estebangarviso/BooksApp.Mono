@@ -4,7 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { Permission, Profile, Role, User } from '#db';
 import { Sequelize } from 'sequelize';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CreateUserWithDetailsDto } from '../dtos/create-user-and-profile.dto.ts';
+import { type CreateUserWithDetailsDto } from '../interfaces/users.repository.interface';
 import { UsersRepository } from './users.repository';
 
 describe('UsersRepository', () => {
@@ -33,6 +33,8 @@ describe('UsersRepository', () => {
 		lastName: 'Doe',
 		userId: 'user-id',
 	};
+
+	const mockNewUserId = 'new-user-id';
 
 	const mockTransaction = {
 		commit: vi.fn(),
@@ -176,12 +178,12 @@ describe('UsersRepository', () => {
 		it('should create a user with profile successfully', async () => {
 			const createdUser = {
 				...mockUser,
-				id: 'new-user-id',
+				id: mockNewUserId,
 				$set: vi.fn().mockResolvedValue(true),
 				email: createUserDto.email,
 				save: vi.fn().mockResolvedValue({
 					...mockUser,
-					id: 'new-user-id',
+					id: mockNewUserId,
 					email: createUserDto.email,
 				}),
 			};
@@ -192,7 +194,7 @@ describe('UsersRepository', () => {
 					...mockProfile,
 					firstName: createUserDto.profile?.firstName,
 					lastName: createUserDto.profile?.lastName,
-					userId: 'new-user-id',
+					userId: mockNewUserId,
 				} as any,
 				true,
 			]);
@@ -217,7 +219,7 @@ describe('UsersRepository', () => {
 				{
 					firstName: createUserDto.profile?.firstName,
 					lastName: createUserDto.profile?.lastName,
-					userId: 'new-user-id',
+					userId: mockNewUserId,
 				},
 				{ transaction: mockTransaction },
 			);
@@ -241,11 +243,11 @@ describe('UsersRepository', () => {
 
 			const createdUser = {
 				...mockUser,
-				id: 'new-user-id',
+				id: mockNewUserId,
 				email: userDtoWithoutProfile.email,
 				save: vi.fn().mockResolvedValue({
 					...mockUser,
-					id: 'new-user-id',
+					id: mockNewUserId,
 					email: userDtoWithoutProfile.email,
 				}),
 			};
@@ -277,7 +279,7 @@ describe('UsersRepository', () => {
 		it('should throw BadRequestException if profile update fails', async () => {
 			const createdUser = {
 				...mockUser,
-				id: 'new-user-id',
+				id: mockNewUserId,
 				$set: vi.fn(),
 				email: createUserDto.email,
 				save: vi.fn(),

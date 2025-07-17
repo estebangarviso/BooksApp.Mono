@@ -1,7 +1,14 @@
 import { type IBaseRepository, type Role, type User } from '#db';
-import type { CreateUserWithDetailsDto } from '../dtos/create-user-and-profile.dto.ts';
-
 export const USERS_REPOSITORY = 'UsersRepository';
+
+import type { ProfileCreationAttributes } from '#db';
+
+export type CreateUserWithDetailsDto = {
+	email: string;
+	password: string;
+	roleId: number;
+	profile?: Omit<ProfileCreationAttributes, 'userId'>;
+};
 
 export interface IUsersRepository extends IBaseRepository<User> {
 	/**

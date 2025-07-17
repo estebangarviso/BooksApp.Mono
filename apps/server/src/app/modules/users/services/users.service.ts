@@ -7,14 +7,13 @@ import {
 import { env } from '#config';
 import { Profile, Role, User, UserAttributes } from '#db';
 import { FindOptions, Op } from 'sequelize';
-import { CreateUserResponseDto } from '../dtos/create-user-response.dto';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { PaginateUsersDto } from '../dtos/paginate-users.dto';
-import { PaginatedUserDto } from '../dtos/paginated-user.dto';
 import {
 	type IUsersRepository,
 	USERS_REPOSITORY,
 } from '../interfaces/users.repository.interface';
+import { UserVo } from '../vos/user.vo';
 
 @Injectable()
 export class UsersService {
@@ -55,9 +54,7 @@ export class UsersService {
 		await user.save();
 	}
 
-	async createUserWithDetails(
-		createUserDto: typeof CreateUserDto.schema.static,
-	): Promise<typeof CreateUserResponseDto.schema.static> {
+	async createUserWithDetails(createUserDto: CreateUserDto): Promise<User> {
 		try {
 			const existingUser = await this.usersRepository.findOneByEmail(
 				createUserDto.email,
@@ -72,26 +69,15 @@ export class UsersService {
 			);
 			if (!role) throw new BadRequestException('Role not found');
 
-			const createdUserWithDetails =
-				await this.usersRepository.createUserWithDetails({
-					email: createUserDto.email,
-					password: this._generateRandomPassword(),
-					roleId: role.id,
-					profile: {
-						firstName: createUserDto.firstName,
-						lastName: createUserDto.lastName,
-					},
-				});
-			return {
-				id: createdUserWithDetails.id,
-				createdAt: createdUserWithDetails.createdAt,
-				email: createdUserWithDetails.email,
-				firstName: createdUserWithDetails.profile?.firstName || '',
-				hasAccess: createdUserWithDetails.hasAccess(),
-				lastName: createdUserWithDetails.profile?.lastName || '',
-				roleName: role.name,
-				updatedAt: createdUserWithDetails.updatedAt,
-			};
+			return await this.usersRepository.createUserWithDetails({
+				email: createUserDto.email,
+				password: this._generateRandomPassword(),
+				roleId: role.id,
+				profile: {
+					firstName: createUserDto.firstName,
+					lastName: createUserDto.lastName,
+				},
+			});
 		} catch (error) {
 			throw new NotFoundException('User could not be created', {
 				cause: error,
@@ -121,9 +107,9 @@ export class UsersService {
 	 *
 	 * @throws {NotFoundException} if no books are found.
 	 */
-	async search(options?: typeof PaginateUsersDto.schema.static): Promise<{
+	async search(options?: PaginateUsersDto): Promise<{
 		count: number;
-		rows: (typeof PaginatedUserDto.schema.static)[];
+		rows: UserVo[];
 	}> {
 		const {
 			includeDeleted = false,
@@ -159,9 +145,11 @@ export class UsersService {
 				],
 			};
 		}
-		const result = await this.usersRepository.paginate<
-			typeof PaginatedUserDto.schema.static
-		>(page, limit, findOptions);
+		const result = await this.usersRepository.paginate<UserVo>(
+			page,
+			limit,
+			findOptions,
+		);
 
 		if (result.totalRecords === 0) {
 			throw new NotFoundException(

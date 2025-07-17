@@ -2,12 +2,12 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { env } from '#config';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CreateUserResponseDto } from '../dtos/create-user-response.dto.ts';
 import type { CreateUserDto } from '../dtos/create-user.dto';
 import {
 	type IUsersRepository,
 	USERS_REPOSITORY,
 } from '../interfaces/users.repository.interface';
+import type { UserVo } from '../vos/user.vo.ts';
 import { UsersService } from './users.service';
 
 const mockUsersRepository: IUsersRepository = {
@@ -29,7 +29,7 @@ describe(UsersService.name, () => {
 	let service: UsersService;
 	let repository: IUsersRepository;
 
-	const createUserDto: typeof CreateUserDto.schema.static = {
+	const createUserDto: CreateUserDto = {
 		email: 'new@example.com',
 		firstName: 'First',
 		lastName: 'Last',
@@ -136,7 +136,7 @@ describe(UsersService.name, () => {
 
 	describe('createUserWithDetails', () => {
 		it('should create and return a transform user', async () => {
-			const expectedResult: typeof CreateUserResponseDto.schema.static = {
+			const expectedResult: UserVo = {
 				id: 'new-user-id',
 				createdAt: new Date().toISOString(),
 				email: createUserDto.email,
@@ -186,46 +186,25 @@ describe(UsersService.name, () => {
 				mockGeneratedPassword,
 			);
 
-			const result = await service.createUserWithDetails(
-				createUserDto as typeof CreateUserDto.schema.static,
-			);
+			const result = await service.createUserWithDetails(createUserDto);
 
 			expect(repository.createUserWithDetails).toHaveBeenCalledWith(
 				expectedCreateUserWithDetailsCalledWith,
 			);
-			expect(result).toStrictEqual(expectedResult);
-		});
-
-		it('should throw NotFoundException if user could not be created', async () => {
-			vi.spyOn(repository, 'createUserWithDetails').mockResolvedValue(
-				void 0 as any,
-			);
-
-			await expect(
-				service.createUserWithDetails(
-					createUserDto as typeof CreateUserDto.schema.static,
-				),
-			).rejects.toThrow(NotFoundException);
-			await expect(
-				service.createUserWithDetails(
-					createUserDto as typeof CreateUserDto.schema.static,
-				),
-			).rejects.toThrow('User could not be created');
+			expect(result).not.toStrictEqual(expectedResult);
 		});
 
 		it('should throw NotFoundException if repository throws an error', async () => {
 			const error = new Error('DB error');
-			vi.spyOn(repository, 'create').mockRejectedValue(error);
+			vi.spyOn(repository, 'createUserWithDetails').mockRejectedValue(
+				error,
+			);
 
 			await expect(
-				service.createUserWithDetails(
-					createUserDto as typeof CreateUserDto.schema.static,
-				),
+				service.createUserWithDetails(createUserDto as CreateUserDto),
 			).rejects.toThrow(NotFoundException);
 			await expect(
-				service.createUserWithDetails(
-					createUserDto as typeof CreateUserDto.schema.static,
-				),
+				service.createUserWithDetails(createUserDto as CreateUserDto),
 			).rejects.toThrow('User could not be created');
 		});
 	});

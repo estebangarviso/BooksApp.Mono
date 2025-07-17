@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import { AjvDto } from '#libs/ajv';
 
-export class PaginatedUserDto extends AjvDto({
+export class UserVo extends AjvDto({
 	id: Type.String({
 		description: 'Unique identifier of the user',
 		example: '123e4567-e89b-12d3-a456-426614174000',
@@ -40,4 +40,4 @@ export class PaginatedUserDto extends AjvDto({
 }) {}
 
 // register DTO OpenApi schema to Swagger
-PaginatedUserDto.registerOpenApi();
+UserVo.registerOpenApi();

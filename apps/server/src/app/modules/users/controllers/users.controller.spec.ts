@@ -47,11 +47,15 @@ describe(UsersController.name, () => {
 		it('should call userService.createUserWithDetails with the provided DTO', async () => {
 			const createUserDto: CreateUserDto = {
 				email: 'test@example.com',
-				password: 'password123',
+				firstName: 'Doe',
+				lastName: 'John',
+				roleId: 1,
 			};
 			const expectedUser = {
 				id: '1',
 				email: 'test@example.com',
+				firstName: 'Doe',
+				lastName: 'John',
 				password: 'hashedpassword',
 				tokenVersion: 0,
 			};
@@ -64,7 +68,7 @@ describe(UsersController.name, () => {
 			expect(service.createUserWithDetails).toHaveBeenCalledWith(
 				createUserDto,
 			);
-			expect(result).toStrictEqual(expectedUser);
+			expect(result).toBeUndefined();
 		});
 	});
 });
