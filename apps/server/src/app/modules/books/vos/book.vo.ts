@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import { AjvDto } from '#libs/ajv';
 
-export class CreatedBookDto extends AjvDto({
+export class BookVo extends AjvDto({
 	id: Type.String({
 		description: 'Unique identifier of the book',
 		example: '123e4567-e89b-12d3-a456-426614174000',
@@ -47,4 +47,4 @@ export class CreatedBookDto extends AjvDto({
 }) {}
 
 // register DTO OpenApi schema to Swagger
-CreatedBookDto.registerOpenApi();
+BookVo.registerOpenApi();

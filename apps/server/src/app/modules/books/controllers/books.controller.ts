@@ -11,9 +11,11 @@ import {
 	Res,
 	UseInterceptors,
 } from '@nestjs/common';
-import { Book, PaginateResult } from '#db';
+import { Book } from '#db';
+import { TPage } from '#libs/ajv';
 import {
 	AuthGuards,
+	GetCurrentUserId,
 	RequiredPermissions,
 	RequiredRoles,
 } from '#libs/decorators';
@@ -22,11 +24,11 @@ import { type FastifyReply } from 'fastify';
 import { Readable } from 'node:stream';
 import { ApplyControllerDocs } from '../../../decorators/docs.decorator';
 import { CreateBookDto } from '../dtos/create-book.dto';
-import { type CreatedBookDto } from '../dtos/created-book.dto.ts';
-import { PaginateBooksDto } from '../dtos/paginate-books.dto';
+import { FindBooksQueryDto } from '../dtos/find-books-query.dto.ts';
 import { UpdateBookDto } from '../dtos/update-book.dto';
-import { PaginateBooksInterceptor } from '../interceptors/paginate-books.interceptor';
+import { SearchBooksInterceptor } from '../interceptors/search-books.interceptor.ts';
 import { BooksService } from '../services/books.service';
+import { type BookVo } from '../vos/book.vo.ts';
 import { BooksControllerDocs } from './books.controller.docs';
 
 @ApplyControllerDocs(BooksControllerDocs)
@@ -37,16 +39,22 @@ export class BooksController {
 
 	@Post()
 	@RequiredPermissions(AppPermission.BOOKS_CREATE)
-	create(@Body() createBookDto: CreateBookDto): Promise<CreatedBookDto> {
-		return this._booksService.create(createBookDto);
+	create(
+		@Body() createBookDto: CreateBookDto,
+		@GetCurrentUserId() userId: string,
+	): Promise<BookVo> {
+		return this._booksService.create({
+			...createBookDto,
+			creatorId: userId,
+		});
 	}
 
 	@Get()
 	@RequiredPermissions(AppPermission.BOOKS_READ)
-	@UseInterceptors(PaginateBooksInterceptor)
-	search(
-		@Query() paginateBooksDto: PaginateBooksDto,
-	): Promise<PaginateResult<PaginateBooksDto>> {
+	@UseInterceptors(SearchBooksInterceptor)
+	searchBooks(
+		@Query() paginateBooksDto: FindBooksQueryDto,
+	): Promise<TPage<Book>> {
 		return this._booksService.search(paginateBooksDto);
 	}
 

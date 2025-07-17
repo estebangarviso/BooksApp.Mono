@@ -6,19 +6,21 @@ import {
 	Book,
 	BookAttributes,
 	Genre,
-	PaginateResult,
 	Publisher,
 } from '#db';
+import { TPage } from '#libs/ajv';
 import {
 	CreationAttributes,
 	FindOptions,
 	Order,
+	Transaction,
 	WhereOptions,
 } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { CreateBookDto } from '../dtos/create-book.dto';
-import type { PaginatedBookDto } from '../dtos/paginated-book.dto.ts';
+import { CreateBookDtoWithCreatorId } from '../dtos/create-book.dto.ts';
+import { UpdateBookDto } from '../dtos/update-book.dto.ts';
 import { IBooksRepository } from '../interfaces/books.repository.interface';
+import { BookVo } from '../vos/book.vo.ts';
 
 @Injectable()
 export class BooksRepository
@@ -63,66 +65,38 @@ export class BooksRepository
 	 * @returns The created book instance with related entities.
 	 */
 	createWithDetails(
-		createBookDto: CreateBookDto,
-	): Promise<typeof PaginatedBookDto.schema.static> {
+		createBookDto: CreateBookDtoWithCreatorId,
+	): Promise<BookVo> {
 		return this.sequelize.transaction(async (t) => {
-			const {
-				authorName,
-				availability,
-				genres,
-				imageUrl,
-				isbn,
-				price,
-				publisherName,
-				title,
-			} = createBookDto as typeof CreateBookDto.schema.static;
-			const [author] = await this.authorModel.findOrCreate({
-				transaction: t,
-				where: { name: authorName },
-			});
+			const author = await this._findOrCreateAuthor(
+				createBookDto.authorName,
+				t,
+			);
 
-			const [publisher] = await this.publisherModel.findOrCreate({
-				transaction: t,
-				where: { name: publisherName },
-			});
+			const publisher = await this._findOrCreatePublisher(
+				createBookDto.publisherName,
+				t,
+			);
 
 			const bookAttributes: CreationAttributes<Book> = {
 				authorId: author.id,
-				availability,
-				imageUrl,
-				isbn,
-				price,
+				availability: true,
+				creatorId: createBookDto.creatorId,
+				imageUrl: createBookDto.imageUrl,
+				isbn: createBookDto.isbn,
+				price: createBookDto.price,
 				publisherId: publisher.id,
-				title,
-			} as CreationAttributes<Book>;
+				title: createBookDto.title,
+			};
 			const createdBook = await this.bookModel.create(bookAttributes, {
+				include: [Author, Publisher, Genre],
 				transaction: t,
-				include: [
-					{
-						attributes: ['name'],
-						model: Author,
-					},
-					{
-						attributes: ['name'],
-						model: Publisher,
-					},
-					{
-						attributes: ['name'],
-						model: Genre,
-					},
-				],
 			});
 
-			if (genres && genres.length > 0) {
-				const genreInstances = await Promise.all(
-					genres.map((genreName) =>
-						this.genreModel
-							.findOrCreate({
-								transaction: t,
-								where: { name: genreName },
-							})
-							.then(([genre]) => genre),
-					),
+			if (createBookDto.genres && createBookDto.genres.length > 0) {
+				const genreInstances = await this._findOrCreateGenres(
+					createBookDto.genres,
+					t,
 				);
 				await createdBook.$set('genres', genreInstances, {
 					transaction: t,
@@ -139,7 +113,7 @@ export class BooksRepository
 				price: savedBook.price,
 				publisherName: savedBook.publisher.name,
 				title: savedBook.title,
-			} satisfies typeof PaginatedBookDto.schema.static;
+			};
 		});
 	}
 
@@ -198,7 +172,7 @@ export class BooksRepository
 		order: Order,
 		includeDeleted = false,
 		where: WhereOptions<BookAttributes> = {},
-	): Promise<PaginateResult<Book>> {
+	): Promise<TPage<Book>> {
 		if (currentPage < 1)
 			throw new BadRequestException(
 				'Current page must be greater than 0',
@@ -223,5 +197,100 @@ export class BooksRepository
 				['$genres.name$', 'genres'],
 			],
 		});
+	}
+
+	updateWithDetails(
+		id: string,
+		updateBookDto: UpdateBookDto,
+	): Promise<Book | null> {
+		return this.sequelize.transaction(async (t) => {
+			const foundBook = await this.bookModel.findByPk(id, {
+				include: [Author, Publisher, Genre],
+				transaction: t,
+			});
+			if (!foundBook) return null;
+
+			const { authorName, genres, publisherName } = updateBookDto;
+
+			if (authorName) {
+				const author = await this._findOrCreateAuthor(authorName, t);
+				foundBook.authorId = author.id;
+			}
+
+			if (publisherName) {
+				const publisher = await this._findOrCreatePublisher(
+					publisherName,
+					t,
+				);
+				foundBook.publisherId = publisher.id;
+			}
+
+			if (genres && genres.length > 0) {
+				const genreInstances = await this._findOrCreateGenres(
+					genres,
+					t,
+				);
+				await foundBook.$set('genres', genreInstances, {
+					transaction: t,
+				});
+			}
+
+			const {
+				authorName: _authorName,
+				genres: _genres,
+				publisherName: _publisherName,
+				...bookAttributes
+			} = updateBookDto;
+
+			return this.update(id, bookAttributes as BookAttributes);
+		});
+	}
+
+	private async _findOrCreateAuthor(
+		name: string,
+		transaction: Transaction,
+	): Promise<Author> {
+		const [author] = await this.authorModel.findOrCreate({
+			transaction,
+			where: { name },
+		});
+
+		return author;
+	}
+
+	private async _findOrCreatePublisher(
+		name: string,
+		transaction: Transaction,
+	): Promise<Publisher> {
+		const [publisher] = await this.publisherModel.findOrCreate({
+			transaction,
+			where: { name },
+		});
+
+		return publisher;
+	}
+
+	private async _findOrCreateGenres(
+		names: string[],
+		transaction: Transaction,
+	): Promise<Genre[]> {
+		const existingGenres = await this.genreModel.findAll({
+			transaction,
+			where: { name: names },
+		});
+
+		const existingGenreNames = new Set(existingGenres.map((g) => g.name));
+		const newGenres = names
+			.filter((name) => !existingGenreNames.has(name))
+			.map((name) => ({ name }));
+
+		if (newGenres.length > 0) {
+			const createdGenres = await this.genreModel.bulkCreate(newGenres, {
+				transaction,
+			});
+			return [...existingGenres, ...createdGenres];
+		}
+
+		return existingGenres;
 	}
 }

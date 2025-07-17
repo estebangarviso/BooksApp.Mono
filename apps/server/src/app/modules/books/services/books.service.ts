@@ -4,18 +4,19 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
-import { Book, BookAttributes, type PaginateResult } from '#db';
+import { Book, BookAttributes } from '#db';
+import { TPage } from '#libs/ajv';
 import { stringify } from 'csv-stringify';
 import { Op, Order, WhereOptions } from 'sequelize';
-import { CreateBookDto } from '../dtos/create-book.dto';
-import type { CreatedBookDto } from '../dtos/created-book.dto.ts';
-import { PaginateBooksDto } from '../dtos/paginate-books.dto';
+import { CreateBookDtoWithCreatorId } from '../dtos/create-book.dto';
+import { FindBooksQueryDto } from '../dtos/find-books-query.dto.ts';
 import { UpdateBookDto } from '../dtos/update-book.dto';
 import {
 	BOOKS_REPOSITORY,
 	type IBooksRepository,
 } from '../interfaces/books.repository.interface';
 import { isIsbn } from '../utils/type-validators.util';
+import type { BookVo } from '../vos/book.vo.ts';
 
 @Injectable()
 export class BooksService {
@@ -27,12 +28,13 @@ export class BooksService {
 	/**
 	 * Creates a new book with the provided details.
 	 * The repository handles the complex creation logic, including author and publisher creation.
-	 * @param createBookDto - The DTO containing book details.
+	 * @param createBookDtoWithCreatorId - The DTO containing book details.
 	 * @returns The created book instance.
 	 */
-	async create(createBookDto: CreateBookDto): Promise<CreatedBookDto> {
-		const { isbn, title } =
-			createBookDto as typeof CreateBookDto.schema.static;
+	async create(
+		createBookDtoWithCreatorId: CreateBookDtoWithCreatorId,
+	): Promise<BookVo> {
+		const { isbn, title } = createBookDtoWithCreatorId;
 		if (title) {
 			const existingBook = await this.booksRepository.findByTitle(title);
 			if (existingBook) {
@@ -49,7 +51,9 @@ export class BooksService {
 			}
 		}
 		// the repository now handles the complex creation logic.
-		return this.booksRepository.createWithDetails(createBookDto);
+		return this.booksRepository.createWithDetails(
+			createBookDtoWithCreatorId,
+		);
 	}
 
 	/**
@@ -75,8 +79,7 @@ export class BooksService {
 	 * @throws {NotFoundException} if the book with the given ID does not exist.
 	 */
 	async update(bookId: string, updateBookDto: UpdateBookDto) {
-		const { isbn, title } =
-			updateBookDto as typeof UpdateBookDto.schema.static;
+		const { isbn, title } = updateBookDto;
 		if (title) {
 			const existingBook = await this.booksRepository.findByTitle(title);
 			if (existingBook && existingBook.id !== bookId) {
@@ -93,7 +96,10 @@ export class BooksService {
 			}
 		}
 		// the repository now handles the complex update logic.
-		const book = await this.booksRepository.update(bookId, updateBookDto);
+		const book = await this.booksRepository.updateWithDetails(
+			bookId,
+			updateBookDto,
+		);
 		if (!book) {
 			throw new NotFoundException(`Book with ID "${bookId}" not found`);
 		}
@@ -132,9 +138,7 @@ export class BooksService {
 	 *
 	 * @throws {NotFoundException} if no books are found.
 	 */
-	async search(
-		options?: typeof PaginateBooksDto.schema.static,
-	): Promise<PaginateResult<Book>> {
+	async search(options?: FindBooksQueryDto): Promise<TPage<Book>> {
 		const {
 			includeDeleted = false,
 			limit = 10,

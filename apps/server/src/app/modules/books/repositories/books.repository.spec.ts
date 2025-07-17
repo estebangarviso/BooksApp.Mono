@@ -3,8 +3,8 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { Author, Book, Genre, Publisher } from '#db';
 import { Sequelize } from 'sequelize-typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CreateBookDto } from '../dtos/create-book.dto';
-import type { PaginatedBookDto } from '../dtos/paginated-book.dto.ts';
+import { type CreateBookDtoWithCreatorId } from '../dtos/create-book.dto';
+import { type BookVo } from '../vos/book.vo.ts';
 import { BooksRepository } from './books.repository';
 
 const mockBookModel = {
@@ -20,6 +20,7 @@ const mockPublisherModel = {
 	findOrCreate: vi.fn(),
 };
 const mockGenreModel = {
+	findAll: vi.fn(),
 	findOrCreate: vi.fn(),
 };
 
@@ -82,9 +83,10 @@ describe('BooksRepository', () => {
 				save: vi.fn(),
 				title: 'Test Book',
 			} as unknown as Book;
-			const createBookDto: typeof CreateBookDto.schema.static = {
+			const createBookDtoWithCreatorId: CreateBookDtoWithCreatorId = {
 				authorName: mockBookInstance.author.name,
 				availability: mockBookInstance.availability,
+				creatorId: 'creator-1',
 				genres: mockBookInstance.genres.map((genre) => genre.name),
 				imageUrl: mockBookInstance.imageUrl,
 				isbn: mockBookInstance.isbn,
@@ -92,7 +94,7 @@ describe('BooksRepository', () => {
 				publisherName: mockBookInstance.publisher.name,
 				title: mockBookInstance.title,
 			};
-			const expectedResult: typeof PaginatedBookDto.schema.static = {
+			const expectedResult: BookVo = {
 				id: mockBookInstance.id,
 				authorName: mockBookInstance.author.name,
 				availability: mockBookInstance.availability,
@@ -109,27 +111,27 @@ describe('BooksRepository', () => {
 				publisherInstance,
 			]);
 			mockBookModel.create.mockResolvedValue(mockBookInstance);
-			mockGenreModel.findOrCreate
-				.mockResolvedValueOnce([genreInstances[0]])
-				.mockResolvedValueOnce([genreInstances[1]]);
+			mockGenreModel.findAll.mockResolvedValue(genreInstances);
 			vi.spyOn(mockBookInstance, '$set').mockResolvedValueOnce(null);
 			vi.spyOn(mockBookInstance, 'save').mockResolvedValueOnce(
 				mockBookInstance,
 			);
 
-			const result = await repository.createWithDetails(createBookDto);
+			const result = await repository.createWithDetails(
+				createBookDtoWithCreatorId,
+			);
 
 			expect(mockSequelize.transaction).toHaveBeenCalledOnce();
 			expect(mockAuthorModel.findOrCreate).toHaveBeenCalledWith({
 				transaction: mockTransaction,
-				where: { name: createBookDto.authorName },
+				where: { name: createBookDtoWithCreatorId.authorName },
 			});
 			expect(mockPublisherModel.findOrCreate).toHaveBeenCalledWith({
 				transaction: mockTransaction,
-				where: { name: createBookDto.publisherName },
+				where: { name: createBookDtoWithCreatorId.publisherName },
 			});
 			expect(mockBookModel.create).toHaveBeenCalled();
-			expect(mockGenreModel.findOrCreate).toHaveBeenCalledTimes(2);
+			expect(mockGenreModel.findAll).toHaveBeenCalled();
 			expect(mockBookInstance.$set).toHaveBeenCalledWith(
 				'genres',
 				expect.any(Array),
@@ -146,7 +148,6 @@ describe('BooksRepository', () => {
 		it('should create an async generator for books with author, publisher, and genres', async () => {
 			const includeDeleted = true;
 			const BATCH_SIZE = 100;
-			const offset = 0;
 
 			const mockBooksPage1 = Array.from(
 				{ length: BATCH_SIZE },

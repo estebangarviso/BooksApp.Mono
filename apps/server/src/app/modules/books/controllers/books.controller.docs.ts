@@ -10,9 +10,11 @@ import {
 } from '@nestjs/swagger';
 import { type DecoratorsLookUp } from '#libs/decorators';
 import { HttpStatusCode } from '#libs/http';
+import { BookPageDto } from '../dtos/book-page.dto.ts';
 import { CreateBookDto } from '../dtos/create-book.dto.ts';
-import { PaginateBooksDto } from '../dtos/paginate-books.dto.ts';
+import { FindBooksQueryDto } from '../dtos/find-books-query.dto.ts';
 import { UpdateBookDto } from '../dtos/update-book.dto.ts';
+import { BookVo } from '../vos/book.vo.ts';
 import { type BooksController } from './books.controller.ts';
 
 export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
@@ -31,15 +33,27 @@ export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
 			ApiBody({ schema: CreateBookDto.refObj }),
 			ApiResponse({
 				description: 'Book created successfully',
-				schema: CreateBookDto.refObj,
+				schema: BookVo.refObj,
 				status: HttpStatusCode.CREATED,
+			}),
+		],
+		findAllForExport: [
+			ApiOperation({ summary: 'Export all books to a CSV file' }),
+			ApiProduces('text/csv'),
+			ApiResponse({
+				description: 'CSV file containing all books',
+				status: HttpStatusCode.OK,
+			}),
+			ApiResponse({
+				description: 'No books found',
+				status: HttpStatusCode.NOT_FOUND,
 			}),
 		],
 		findOne: [
 			ApiOperation({ summary: 'Get a single book by ID' }),
 			ApiResponse({
 				description: 'Book found successfully',
-				schema: CreateBookDto.refObj,
+				schema: BookVo.refObj,
 				status: HttpStatusCode.OK,
 			}),
 			ApiResponse({
@@ -54,29 +68,14 @@ export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
 				status: HttpStatusCode.NO_CONTENT,
 			}),
 		],
-		search: [
+		searchBooks: [
 			ApiOperation({ summary: 'Search for books' }),
 			ApiQuery({
-				schema: PaginateBooksDto.refObj,
+				schema: FindBooksQueryDto.refObj,
 			}),
 			ApiResponse({
 				description: 'List of books found',
-				status: HttpStatusCode.OK,
-				schema: {
-					items: CreateBookDto.refObj,
-					type: 'array',
-				},
-			}),
-			ApiResponse({
-				description: 'No books found',
-				status: HttpStatusCode.NOT_FOUND,
-			}),
-		],
-		findAllForExport: [
-			ApiOperation({ summary: 'Export all books to a CSV file' }),
-			ApiProduces('text/csv'),
-			ApiResponse({
-				description: 'CSV file containing all books',
+				schema: BookPageDto.refObj,
 				status: HttpStatusCode.OK,
 			}),
 			ApiResponse({
@@ -94,7 +93,7 @@ export const BooksControllerDocs: DecoratorsLookUp<BooksController> = {
 			}),
 			ApiResponse({
 				description: 'Book updated successfully',
-				schema: CreateBookDto.refObj,
+				schema: BookVo.refObj,
 				status: HttpStatusCode.OK,
 			}),
 			ApiResponse({

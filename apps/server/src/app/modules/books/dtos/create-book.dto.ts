@@ -44,5 +44,9 @@ export class CreateBookDto extends AjvDto({
 	}),
 }) {}
 
+export interface CreateBookDtoWithCreatorId extends CreateBookDto {
+	creatorId: string;
+}
+
 // register DTO OpenApi schema to Swagger
 CreateBookDto.registerOpenApi();

@@ -3,7 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import type { Book } from '#db';
 import { PassThrough } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type CreateBookDto } from '../dtos/create-book.dto';
+import { type CreateBookDtoWithCreatorId } from '../dtos/create-book.dto';
 import {
 	BOOKS_REPOSITORY,
 	type IBooksRepository,
@@ -24,11 +24,13 @@ const mockBooksRepository: IBooksRepository = {
 	paginate: vi.fn(),
 	paginateBooks: vi.fn(),
 	update: vi.fn(),
+	updateWithDetails: vi.fn(),
 };
 
 describe('BooksService', () => {
 	let service: BooksService;
 	let repository: IBooksRepository;
+	const creatorId = 'creator-id';
 
 	const asyncGeneratorDataStreamBookToCsvWithData: AsyncGenerator<Book> =
 		(async function* () {
@@ -45,6 +47,7 @@ describe('BooksService', () => {
 		})();
 
 	const booksStreamGenerator: AsyncGenerator<Book> =
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		(async function* () {})();
 
 	beforeEach(async () => {
@@ -73,9 +76,10 @@ describe('BooksService', () => {
 
 	describe('create', () => {
 		it('should call repository.createWithDetails with correct data', async () => {
-			const createBookDto: typeof CreateBookDto.schema.static = {
+			const createBookDtoWithCreatorId: CreateBookDtoWithCreatorId = {
 				authorName: 'Author Name',
 				availability: true,
+				creatorId,
 				genres: ['Fiction', 'Adventure'],
 				imageUrl: 'http://example.com/image.jpg',
 				isbn: '123',
@@ -83,17 +87,17 @@ describe('BooksService', () => {
 				publisherName: 'Publisher Name',
 				title: 'New Book',
 			};
-			const expectedBook = { id: '1', ...createBookDto };
+			const expectedBook = { id: '1', ...createBookDtoWithCreatorId };
 			vi.spyOn(repository, 'findByTitle').mockResolvedValue(null);
 			vi.spyOn(repository, 'findByIsbn').mockResolvedValue(null);
 			vi.spyOn(repository, 'createWithDetails').mockResolvedValue(
 				expectedBook as any,
 			);
 
-			const result = await service.create(createBookDto);
+			const result = await service.create(createBookDtoWithCreatorId);
 
 			expect(repository.createWithDetails).toHaveBeenCalledWith(
-				createBookDto,
+				createBookDtoWithCreatorId,
 			);
 			expect(result).toStrictEqual(expectedBook);
 		});
@@ -154,13 +158,16 @@ describe('BooksService', () => {
 			const updateDto = { title: 'Updated Book' };
 			const updatedBook = { id: bookId, ...updateDto };
 			vi.spyOn(repository, 'findByTitle').mockResolvedValue(null);
-			vi.spyOn(repository, 'update').mockResolvedValue(
+			vi.spyOn(repository, 'updateWithDetails').mockResolvedValue(
 				updatedBook as any,
 			);
 
 			const result = await service.update(bookId, updateDto);
 
-			expect(repository.update).toHaveBeenCalledWith(bookId, updateDto);
+			expect(repository.updateWithDetails).toHaveBeenCalledWith(
+				bookId,
+				updateDto,
+			);
 			expect(result).toStrictEqual(updatedBook);
 		});
 
@@ -170,7 +177,7 @@ describe('BooksService', () => {
 			vi.spyOn(repository, 'findByTitle').mockResolvedValue({
 				id: bookId,
 			} as any); // same ID
-			vi.spyOn(repository, 'update').mockResolvedValue({
+			vi.spyOn(repository, 'updateWithDetails').mockResolvedValue({
 				id: bookId,
 				...updateDto,
 			} as any);
@@ -208,7 +215,7 @@ describe('BooksService', () => {
 			const bookId = '1';
 			const updateDto = { title: 'Updated Book' };
 			vi.spyOn(repository, 'findByTitle').mockResolvedValue(null);
-			vi.spyOn(repository, 'update').mockResolvedValue(null);
+			vi.spyOn(repository, 'updateWithDetails').mockResolvedValue(null);
 
 			await expect(service.update(bookId, updateDto)).rejects.toThrow(
 				NotFoundException,

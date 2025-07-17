@@ -32,11 +32,13 @@ export class UpdateBookDto extends AjvDto({
 			example: '978-3-16-148410-0',
 		}),
 	),
-	price: Type.Number({
-		description: 'Price of the book',
-		example: 10.25,
-		minimum: 0,
-	}),
+	price: Type.Optional(
+		Type.Number({
+			description: 'Price of the book',
+			example: 10.25,
+			minimum: 0,
+		}),
+	),
 	publisherName: Type.Optional(
 		Type.String({
 			description: 'Publisher of the book',

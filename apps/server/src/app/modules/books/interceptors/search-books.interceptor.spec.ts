@@ -1,21 +1,16 @@
 import { type CallHandler, type ExecutionContext } from '@nestjs/common';
-import {
-	type Author,
-	type Book,
-	type Genre,
-	type PaginateResult,
-	type Publisher,
-} from '#db';
+import { type Author, type Book, type Genre, type Publisher } from '#db';
+import { type TPage } from '#libs/ajv';
 import { lastValueFrom, of } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type PaginatedBookDto } from '../dtos/paginated-book.dto';
-import { PaginateBooksInterceptor } from './paginate-books.interceptor';
+import { type BookVo } from '../vos/book.vo.ts';
+import { SearchBooksInterceptor } from './search-books.interceptor';
 
-describe('PaginateBooksInterceptor', () => {
-	let interceptor: PaginateBooksInterceptor;
+describe(SearchBooksInterceptor.name, () => {
+	let interceptor: SearchBooksInterceptor;
 
 	beforeEach(() => {
-		interceptor = new PaginateBooksInterceptor();
+		interceptor = new SearchBooksInterceptor();
 	});
 
 	it('should be defined', () => {
@@ -28,6 +23,7 @@ describe('PaginateBooksInterceptor', () => {
 			author: { id: '1', name: 'Test Author' } as Author,
 			availability: true,
 			createdAt: new Date(),
+			creatorId: 'creator-id',
 			genres: [{ id: '1', name: 'Fiction' }] as Genre[],
 			imageUrl: 'http://example.com/image.png',
 			isbn: '978-3-16-148410-0',
@@ -37,7 +33,7 @@ describe('PaginateBooksInterceptor', () => {
 			updatedAt: new Date(),
 		} as Book;
 
-		const paginatedResult: PaginateResult<Book> = {
+		const paginatedResult: TPage<Book> = {
 			currentPage: 1,
 			data: [mockBook],
 			hasMorePages: false,
@@ -52,9 +48,9 @@ describe('PaginateBooksInterceptor', () => {
 
 		const result = (await lastValueFrom(
 			interceptor.intercept(mockExecutionContext, mockCallHandler),
-		)) as PaginateResult<PaginatedBookDto>[];
+		)) as TPage<BookVo>[];
 
-		const expectedDto: typeof PaginatedBookDto.schema.static = {
+		const expectedDto: BookVo = {
 			id: '1',
 			authorName: 'Test Author',
 			availability: true,

@@ -1,9 +1,5 @@
-import {
-	type Book,
-	type BookAttributes,
-	type IBaseRepository,
-	type PaginateResult,
-} from '#db';
+import { type Book, type BookAttributes, type IBaseRepository } from '#db';
+import { type TPage } from '#libs/ajv';
 import {
 	type Attributes,
 	type CreateOptions,
@@ -11,8 +7,9 @@ import {
 	type Order,
 	type WhereOptions,
 } from 'sequelize';
-import { type CreateBookDto } from '../dtos/create-book.dto';
-import type { CreatedBookDto } from '../dtos/created-book.dto.ts';
+import { type CreateBookDtoWithCreatorId } from '../dtos/create-book.dto';
+import { type UpdateBookDto } from '../dtos/update-book.dto.ts';
+import type { BookVo } from '../vos/book.vo.ts';
 
 export const BOOKS_REPOSITORY = 'BooksRepository';
 
@@ -21,9 +18,9 @@ export const BOOKS_REPOSITORY = 'BooksRepository';
 export interface IBooksRepository extends IBaseRepository<Book> {
 	findAllForExport(includeDeleted?: boolean): AsyncGenerator<Book>;
 	createWithDetails(
-		createBookDto: CreateBookDto,
+		createBookDto: CreateBookDtoWithCreatorId,
 		options?: CreateOptions<Attributes<Book>>,
-	): Promise<typeof CreatedBookDto.schema.static>;
+	): Promise<BookVo>;
 	findByIsbn(
 		isbn: string,
 		options?: Omit<FindOptions<BookAttributes>, 'where'>,
@@ -38,5 +35,9 @@ export interface IBooksRepository extends IBaseRepository<Book> {
 		order: Order,
 		includeDeleted?: boolean,
 		where?: WhereOptions<BookAttributes>,
-	): Promise<PaginateResult<Book>>;
+	): Promise<TPage<Book>>;
+	updateWithDetails(
+		id: string,
+		updateBookDto: UpdateBookDto,
+	): Promise<Book | null>;
 }

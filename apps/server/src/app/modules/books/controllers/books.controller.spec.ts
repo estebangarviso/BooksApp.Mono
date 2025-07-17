@@ -3,10 +3,9 @@ import type { Book } from '#db';
 import { AuthGuards } from '#libs/decorators';
 import { stringify } from 'csv-stringify';
 import type { FastifyReply } from 'fastify';
-import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type CreateBookDto } from '../dtos/create-book.dto';
-import { type PaginateBooksDto } from '../dtos/paginate-books.dto';
+import { type CreateBookDtoWithCreatorId } from '../dtos/create-book.dto';
+import { type FindBooksQueryDto } from '../dtos/find-books-query.dto';
 import { type UpdateBookDto } from '../dtos/update-book.dto';
 import { BooksService } from '../services/books.service';
 import { BooksController } from './books.controller';
@@ -28,7 +27,7 @@ const mockAccessTokenAuthGuard = {
 describe(BooksController.name, () => {
 	let controller: BooksController;
 	let service: BooksService;
-
+	const mockCreatorId = 'creator-id';
 	async function* bookStreamWithData(): AsyncGenerator<Book> {
 		yield {
 			id: '1',
@@ -66,31 +65,37 @@ describe(BooksController.name, () => {
 
 	describe('create', () => {
 		it('should create a book', async () => {
-			const createBookDto: CreateBookDto = {
-				author: 'Test Author',
+			const createBookDtoWithCreatorId: CreateBookDtoWithCreatorId = {
+				authorName: 'Test Author',
+				creatorId: mockCreatorId,
 				genres: ['Fiction', 'Adventure'],
 				isbn: '1234567890',
 				price: 19.99,
-				publisher: 'Test Publisher',
+				publisherName: 'Test Publisher',
 				title: 'Test Book',
 			};
-			const expectedResult = { id: '1', ...createBookDto };
+			const expectedResult = { id: '1', ...createBookDtoWithCreatorId };
 			mockBooksService.create.mockResolvedValue(expectedResult);
 
-			const result = await controller.create(createBookDto);
+			const result = await controller.create(
+				createBookDtoWithCreatorId,
+				mockCreatorId,
+			);
 
-			expect(service.create).toHaveBeenCalledWith(createBookDto);
+			expect(service.create).toHaveBeenCalledWith(
+				createBookDtoWithCreatorId,
+			);
 			expect(result).toStrictEqual(expectedResult);
 		});
 	});
 
-	describe('search', () => {
+	describe('searchBooks', () => {
 		it('should search for books', async () => {
-			const paginateBooksDto: PaginateBooksDto = { limit: 10, page: 1 };
+			const paginateBooksDto: FindBooksQueryDto = { limit: 10, page: 1 };
 			const expectedResult = { data: [], total: 0 };
 			mockBooksService.search.mockResolvedValue(expectedResult);
 
-			const result = await controller.search(paginateBooksDto);
+			const result = await controller.searchBooks(paginateBooksDto);
 
 			expect(service.search).toHaveBeenCalledWith(paginateBooksDto);
 			expect(result).toStrictEqual(expectedResult);
